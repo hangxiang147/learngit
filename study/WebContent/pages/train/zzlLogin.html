@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta http-equiv="pragma" content="no-cache">
+<meta http-equiv="cache-control" content="no-cache">
+<meta http-equiv="expires" content="0"> 
+<title>登录</title>
+<link href="/assets/css/base1.css" rel="stylesheet" type="text/css" />  
+<link href="/assets/css/base.css" rel="stylesheet" type="text/css" />
+<link href="/assets/css/global.css" rel="stylesheet" type="text/css" />
+<script type="text/javascript" src="/assets/js/jquery-3.1.1.min.js"></script>
+<script type="text/javascript" src="/assets/js/jquery-ui.min.js"></script>
+</head>
+<body class="login_bg">
+<div class="logo"><div class="fl"><img src="/assets/images/logo_w.png"/></div><div class="fl logolm">OA办公系统</div></div>
+<div class="login">
+<form id="myform" class="form-horizontal" >
+<div class="login_tab">
+<div class="lm">员工登录</div>
+<div class="login_form">
+<ul>
+<li class="login_user"><input id="userName" name="staffVO.userName" type="text" class="login_text" value="" placeholder="登录用户名" required /></li>
+<li class="login_pass"><input id="password" name="staffVO.password" type="password" class="login_text" placeholder="登录密码" required/><span class="error"></span></li>
+<li class="login_btndiv"><input id="Button1"  type="button" onclick="login()" value="登录" class="login_btn"/></li>
+</ul>
+</div>
+<div class="mt20">地区：通州，南通，如东，广州，南京，佛山</div>
+</div>
+</form>
+<div class="login_banner">创新&nbsp;&nbsp;专业&nbsp;&nbsp;合作&nbsp;&nbsp;务实</div>
+</div>
+
+<script type="text/javascript">
+	function login() {
+		var userName = document.getElementById("userName").value;
+		var password = document.getElementById("password").value;
+		$.ajax({
+			url:'/login',
+			type:'post',
+			data:{userName: userName,
+				  password: password},  
+			dataType:'json',
+			success:function(data) {
+				if (data.errorMessage!=null && data.errorMessage.length!=0) {
+					$(".error").html(data.errorMessage);
+					return;
+				}
+				if (data.status == 1) {
+					window.location.href = "/initUserAccount";
+				} else if (data.status == 2) {
+					window.location.href = "/personal/home";
+				}
+			}
+		});
+	}
+	
+	document.onkeydown=function(event){
+        var e = event || window.event || arguments.callee.caller.arguments[0];
+         if(e && e.keyCode==13){ // enter 键
+             $("#Button1").click();
+        }
+    }; 
+
+</script>
+</body>
+</html>

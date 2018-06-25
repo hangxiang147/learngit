@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:activiti="http://activiti.org/bpmn" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:omgdc="http://www.omg.org/spec/DD/20100524/DC" xmlns:omgdi="http://www.omg.org/spec/DD/20100524/DI" typeLanguage="http://www.w3.org/2001/XMLSchema" expressionLanguage="http://www.w3.org/1999/XPath" targetNamespace="http://www.activiti.org/test">
+  <process id="Assignment" name="任务分配" isExecutable="true">
+    <startEvent id="startevent1" name="Start"></startEvent>
+    <userTask id="assignment_assign" name="下达任务"></userTask>
+    <sequenceFlow id="flow1" sourceRef="startevent1" targetRef="assignment_assign"></sequenceFlow>
+    <userTask id="assignment_confirm" name="执行人确认" activiti:assignee="${arg.executorID}">
+      <extensionElements>
+        <activiti:taskListener event="create" delegateExpression="${jpushTaskCreateListener}"></activiti:taskListener>
+      </extensionElements>
+    </userTask>
+    <sequenceFlow id="flow2" sourceRef="assignment_assign" targetRef="assignment_confirm"></sequenceFlow>
+    <userTask id="assignment_do" name="任务交付" activiti:assignee="${arg.executorID}">
+      <extensionElements>
+        <activiti:taskListener event="create" delegateExpression="${jpushTaskCreateListener}"></activiti:taskListener>
+      </extensionElements>
+    </userTask>
+    <sequenceFlow id="flow5" name="接收" sourceRef="assignment_confirm" targetRef="assignment_do">
+      <conditionExpression xsi:type="tFormalExpression"><![CDATA[${confirmResult == 3}]]></conditionExpression>
+    </sequenceFlow>
+    <endEvent id="endevent1" name="End"></endEvent>
+    <userTask id="assignment_modify" name="发起人修改任务" activiti:assignee="${arg.userID}">
+      <extensionElements>
+        <activiti:taskListener event="create" delegateExpression="${jpushTaskCreateListener}"></activiti:taskListener>
+      </extensionElements>
+    </userTask>
+    <sequenceFlow id="flow7" name="拒绝" sourceRef="assignment_confirm" targetRef="assignment_modify">
+      <conditionExpression xsi:type="tFormalExpression"><![CDATA[${confirmResult == 4}]]></conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="flow8" name="修改完成" sourceRef="assignment_modify" targetRef="assignment_confirm">
+      <conditionExpression xsi:type="tFormalExpression"><![CDATA[${modifyResult == 5}]]></conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="flow9" name="关闭" sourceRef="assignment_modify" targetRef="endevent1">
+      <conditionExpression xsi:type="tFormalExpression"><![CDATA[${modifyResult == 6}]]></conditionExpression>
+    </sequenceFlow>
+    <userTask id="assignment_inspect" name="完成情况验收" activiti:assignee="${arg.userID}">
+      <extensionElements>
+        <activiti:taskListener event="create" delegateExpression="${jpushTaskCreateListener}"></activiti:taskListener>
+      </extensionElements>
+    </userTask>
+    <sequenceFlow id="flow10" sourceRef="assignment_do" targetRef="assignment_inspect"></sequenceFlow>
+    <sequenceFlow id="flow11" sourceRef="assignment_inspect" targetRef="endevent1"></sequenceFlow>
+  </process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_Assignment">
+    <bpmndi:BPMNPlane bpmnElement="Assignment" id="BPMNPlane_Assignment">
+      <bpmndi:BPMNShape bpmnElement="startevent1" id="BPMNShape_startevent1">
+        <omgdc:Bounds height="35.0" width="35.0" x="30.0" y="210.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="assignment_assign" id="BPMNShape_assignment_assign">
+        <omgdc:Bounds height="55.0" width="105.0" x="110.0" y="200.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="assignment_confirm" id="BPMNShape_assignment_confirm">
+        <omgdc:Bounds height="55.0" width="105.0" x="260.0" y="200.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="assignment_do" id="BPMNShape_assignment_do">
+        <omgdc:Bounds height="55.0" width="105.0" x="430.0" y="200.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="endevent1" id="BPMNShape_endevent1">
+        <omgdc:Bounds height="35.0" width="35.0" x="730.0" y="210.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="assignment_modify" id="BPMNShape_assignment_modify">
+        <omgdc:Bounds height="55.0" width="105.0" x="260.0" y="100.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="assignment_inspect" id="BPMNShape_assignment_inspect">
+        <omgdc:Bounds height="55.0" width="105.0" x="580.0" y="200.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge bpmnElement="flow1" id="BPMNEdge_flow1">
+        <omgdi:waypoint x="65.0" y="227.0"></omgdi:waypoint>
+        <omgdi:waypoint x="110.0" y="227.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow2" id="BPMNEdge_flow2">
+        <omgdi:waypoint x="215.0" y="227.0"></omgdi:waypoint>
+        <omgdi:waypoint x="260.0" y="227.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow5" id="BPMNEdge_flow5">
+        <omgdi:waypoint x="365.0" y="227.0"></omgdi:waypoint>
+        <omgdi:waypoint x="430.0" y="227.0"></omgdi:waypoint>
+        <bpmndi:BPMNLabel>
+          <omgdc:Bounds height="14.0" width="24.0" x="378.0" y="231.0"></omgdc:Bounds>
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow7" id="BPMNEdge_flow7">
+        <omgdi:waypoint x="312.0" y="200.0"></omgdi:waypoint>
+        <omgdi:waypoint x="303.0" y="179.0"></omgdi:waypoint>
+        <omgdi:waypoint x="312.0" y="155.0"></omgdi:waypoint>
+        <bpmndi:BPMNLabel>
+          <omgdc:Bounds height="14.0" width="24.0" x="280.0" y="171.0"></omgdc:Bounds>
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow8" id="BPMNEdge_flow8">
+        <omgdi:waypoint x="312.0" y="155.0"></omgdi:waypoint>
+        <omgdi:waypoint x="321.0" y="176.0"></omgdi:waypoint>
+        <omgdi:waypoint x="312.0" y="200.0"></omgdi:waypoint>
+        <bpmndi:BPMNLabel>
+          <omgdc:Bounds height="14.0" width="48.0" x="325.0" y="170.0"></omgdc:Bounds>
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow9" id="BPMNEdge_flow9">
+        <omgdi:waypoint x="365.0" y="127.0"></omgdi:waypoint>
+        <omgdi:waypoint x="747.0" y="127.0"></omgdi:waypoint>
+        <omgdi:waypoint x="747.0" y="210.0"></omgdi:waypoint>
+        <bpmndi:BPMNLabel>
+          <omgdc:Bounds height="14.0" width="24.0" x="429.0" y="110.0"></omgdc:Bounds>
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow10" id="BPMNEdge_flow10">
+        <omgdi:waypoint x="535.0" y="227.0"></omgdi:waypoint>
+        <omgdi:waypoint x="580.0" y="227.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow11" id="BPMNEdge_flow11">
+        <omgdi:waypoint x="685.0" y="227.0"></omgdi:waypoint>
+        <omgdi:waypoint x="730.0" y="227.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</definitions>
