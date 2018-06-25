@@ -1,0 +1,219 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE struts PUBLIC
+	"-//Apache Software Foundation//DTD Struts Configuration 2.3//EN"
+	"http://struts.apache.org/dtds/struts-2.3.dtd">
+
+<struts>
+	<constant name="struts.i18n.encoding" value="utf-8"></constant>
+	<constant name="struts.multipart.maxSize" value="2147483648"></constant><!-- 这个是设置多表单提交时的最大值，这里设置为2G -->
+	
+	<package name="actionBase" namespace="/" extends="json-default">
+        <global-results>
+            <result name="exception-error">/pages/error.jsp</result>
+        </global-results>
+        <action name="*" class="loginAction" method="{1}" >
+            <result name="index">/pages/index.jsp</result>
+            <result name="loginSuccess" type="redirect">/personal/findTaskList</result> 
+            <result name="firstLogin" type="redirect">/initUserAccount</result>
+			<result name="loginFail" type="redirect">
+			    <param name="location">index</param>
+			    <param name="errorMessage">${errorMessage}</param>
+			    <param name="encode">true</param>
+			</result> 
+			<result name="initUserAccount">/pages/initUserAccount.jsp</result>
+			<result name="findNicknamesByType" type="json">
+			    <param name="includeProperties">errorMessage, nicknameVOs.*</param>
+			</result>
+			<result name="initUserAccountFailed" type="redirect">
+			    <param name="location">initUserAccount</param>
+			    <param name="errorMessage">${errorMessage}</param>
+			    <param name="encode">true</param>
+			</result> 
+        </action>
+    </package>
+	
+	<package name="staff" extends="actionBase" namespace="/HR/staff">
+	    <action name="*" class="staffAction" method="{1}"> 
+	        <result name="error">/pages/HR/error.jsp</result>
+	        <result name="newStaff">/pages/HR/newStaff.jsp</result>
+	        <result name="departmentsByCompanyID" type="json">
+	            <param name="includeProperties">errorMessage,departmentVOs.*</param>
+	        </result>
+	        <result name="addStaff" type="json">
+	            <param name="includeProperties">errorMessage</param>
+	        </result>
+	        <result name="staffManage">/pages/HR/staffManage.jsp</result>
+	        <result name="updateStaff">/pages/HR/updateStaff.jsp</result>
+	        <result name="imgStream" type="stream">
+			         <param name="inputName">inputStream</param>     
+			         <param name="bufferSize">1024</param>   
+			</result> 
+			<result name="saveStaffInformation" type="json">
+	            <param name="includeProperties">errorMessage</param>
+	        </result>
+	        <result name="showStaffDetail">/pages/HR/staffDetail.jsp</result>
+	        <result name="showStaffDetailonAudit" >/pages/HR/staffDetailonAudit.jsp</result><!-- 这个方法是在 审核时查看详情请求的方法-->
+	        <result name="resignStaff" type="json">
+	            <param name="includeProperties">errorMessage</param>
+	        </result>
+	        <result name="deleteStaff" type="json">
+	            <param name="includeProperties">errorMessage</param>
+	        </result>
+	        <result name="staffAudit">/pages/HR/staffAudit.jsp</result>
+	        <result name="updateAuditResult" type="json">
+	            <param name="includeProperties">errorMessage</param>
+	        </result>
+	        <result name="positionsByDepartmentID" type="json">
+	            <param name="includeProperties">positionVOs.*</param>
+	        </result>
+	    </action>
+	</package>
+	
+	<package name="position" extends="actionBase" namespace="/HR/position">
+	    <action name="*" class="positionAction" method="{1}"> 
+	        <result name="findPositionList">/pages/HR/editResponsibility.jsp</result>
+	        <result name="updateResponsibility" type="json">
+	            <param name="includeProperties">errorMessage</param>
+	        </result>
+	        <result name="staffList">/pages/HR/staffPositionList.jsp</result>
+	        <result name="updateGroups" type="json">
+	            <param name="includeProperties">errorMessage</param>
+	        </result>
+	        <result name="findGroupDetailsByUserID">/pages/HR/updateGroups.jsp</result>
+	        <result name="positionHistory">/pages/HR/positionHistory.jsp</result>
+	        <result name="error">/pages/HR/error.jsp</result> 
+	    </action>
+	</package>
+	
+	<package name="attendance" extends="actionBase" namespace="/attendance">
+	    <action name="*" class="attendanceAction" method="{1}">
+	        <result name="error">/pages/attendance/error.jsp</result> 
+	        <result name="vacationList">/pages/attendance/vacationList.jsp</result>
+	        <result name="auditVacation">/pages/attendance/auditVacation.jsp</result>
+	        <result name="vacationComplete" type="redirect">/attendance/findVacationList</result>
+	        <result name="vacationStatistics">/pages/attendance/vacationStatistics.jsp</result>
+	        <result name="upload">/pages/attendance/upload.jsp</result>
+	        <result name="uploadDetail" type="json">
+	            <param name="includeProperties">errorMessage</param>
+	        </result>
+	        <result name="attendanceDetail">/pages/attendance/attendanceDetail.jsp</result>
+	    </action>
+	</package>
+	
+	<package name="personal" extends="json-default" namespace="/personal">
+		<action name="save_*" class="personalAction" method="{1}">			
+	        <interceptor-ref name="token" />
+	        <interceptor-ref name="defaultStack"/>	       
+	        <result name="invalid.token">/pages/submitRepeatError.jsp</result>
+	         <result name="startVacation" type="redirect">
+			    <param name="location">/personal/findProcessList</param>
+			    <param name="type">${type}</param>
+			    <param name="encode">true</param>
+			</result>
+			<result name="startAssignment" type="redirect">
+			    <param name="location">/personal/findProcessList</param>
+			    <param name="type">${type}</param>
+			    <param name="encode">true</param>
+			</result>
+			
+			
+		</action>
+	    <action name="*" class="personalAction" method="{1}">
+	        <result name="error">/pages/personal/error.jsp</result>
+	        <result name="updateInformation">/pages/personal/updateInformation.jsp</result>
+	        <result name="myInformation">/pages/personal/myInformation.jsp</result>
+	        <result name="imgStream" type="stream">
+			         <param name="inputName">inputStream</param>     
+			         <param name="bufferSize">1024</param>   
+			</result> 
+			<result name="saveInformation" type="json">
+	            <param name="includeProperties">errorMessage</param>
+	        </result>
+	        <result name="groupDetailList">/pages/personal/groupDetailList.jsp</result>
+	        <result name="taskList">/pages/personal/taskList.jsp</result>
+	        <result name="perform">/pages/personal/auditTask.jsp</result>
+	        <result name="taskComplete" type="redirect">/personal/findTaskList</result>
+	        <result name="processList">/pages/personal/processList.jsp</result>
+	        <result name="startVacation" type="redirect">
+			    <param name="location">/personal/findProcessList</param>
+			    <param name="type">${type}</param>
+			    <param name="encode">true</param>
+			</result>
+			<result name="startAssignment" type="redirect">
+			    <param name="location">/personal/findProcessList</param>
+			    <param name="type">${type}</param>
+			    <param name="encode">true</param>
+			</result>
+	        <result name="newTask">/pages/personal/assignment.jsp</result>
+	        <result name="newVacation">/pages/personal/vacation.jsp</result>
+	        <result name="newResignation">/pages/personal/resignation.jsp</result>
+	        <result name="departmentStaffList" type="json">
+	            <param name="includeProperties">errorMessage,departmentVOs.*,staffVOs.*</param>
+	        </result>
+	        <result name="updateAssignment">/pages/personal/updateAssignment.jsp</result>
+	        <result name="findAllCompanys" type="json">
+	            <param name="includeProperties">companyVOs.*</param>
+	        </result>
+	        <result name="processDetail">/pages/personal/processDetail.jsp</result>
+	        <result name="vacationDiagram">/pages/personal/vacationDiagram.jsp</result>
+	        <result name="resignationDiagram">/pages/personal/resignationDiagram.jsp</result>
+	        <result name="assignmentDiagram">/pages/personal/assignmentDiagram.jsp</result>
+	        <result name="findStaffByName" type="json">
+	            <param name="includeProperties">staffVOs.*</param>
+	        </result>
+	        <result name="getWorkTimeByUserID" type="json">
+	            <param name="includeProperties">errorMessage,dailyHours,beginTime,endTime</param>
+	        </result>
+	        <result name="attendanceDetail">/pages/personal/attendanceDetail.jsp</result>
+	        <result name="structure">/pages/personal/structure.jsp</result>
+	    </action>
+	</package>
+	
+	<!-- 员工职级和薪资变动  -->
+	<package name="staffInfoAlteration" extends="actionBase" namespace="/HR/staffInfoAlteration">
+	    <action name="*" class="staffInfoAlterationAction" method="{1}">
+	     	<result name="error">/pages/HR/error.jsp</result>
+	    	<result name="gradeAlteration">/pages/HR/staffGradeAlteration.jsp</result><!-- 职级变动 -->
+	    	<result name="salaryAlteration">/pages/HR/staffSalaryAlteration.jsp</result><!-- 薪资变动 -->
+	    	<result name="gradeHistory">/pages/HR/gradeHistory.jsp</result><!-- 职级变动历史记录表 -->
+	    	<result name="salaryHistory">/pages/HR/salaryHistory.jsp</result><!-- 职级变动历史记录表 -->
+	    	<result name="update" type="json">
+	            <param name="includeProperties">errorMessage</param>
+	    	</result>
+	    </action>
+	</package>
+	
+	<!-- SoftUpAndDownloadAction  -->
+	<package name="downloadcenter" extends="actionBase" namespace="/downloadcenter">
+	    <action name="*" class="softUpAndDownloadAction" method="{1}">
+	    	<result name="error">/pages/downloadcenter/error.jsp</result>
+	        <result name="error2">/pages/systemmanagement/downloadcenter/error.jsp</result>
+	        <result name="softCategoryList">/pages/downloadcenter/softCategoryList.jsp</result>
+	        <result name="uploadSuccess">/pages/systemmanagement/downloadcenter/uploadSuccess.jsp</result>
+	        <result name="softManagement">/pages/systemmanagement/downloadcenter/softManagement.jsp</result>
+	        <result name="download" type="stream">/pages/downloadcenter/softCategoryList.jsp
+               	<param name="inputName">inputStream</param>  
+	        	<param name="contentType">text/plain</param>  
+               	<param name="contentDisposition">attachment;fileName="${downloadFileFileName}"</param>  
+               	<param name="bufferSize">1024*1024*10</param>  
+	        </result>
+	        <result name="downloadSoft" type="stream">
+               	<param name="inputName">inputStream</param>  
+	        	<param name="contentType">text/plain</param>  
+               	<param name="contentDisposition">attachment;fileName="${downloadFileFileName}"</param>  
+               	<param name="bufferSize">1024*1024*10</param>  
+	        </result>
+	        <result name="verifySoftVersion" type="json">
+	            <param name="includeProperties">errorMessage,result,appurl</param>
+	    	</result>	    	
+	    </action>
+	</package>
+	
+	<package name="query" extends="actionBase" namespace="/information/query">
+	    <action name="*" class="queryAction" method="{1}"> 
+	        <result name="error">/pages/informationCenter/error.jsp</result>
+	        <result name="queryStaff">/pages/informationCenter/queryStaff.jsp</result>
+	    </action>
+	</package>
+	
+</struts>

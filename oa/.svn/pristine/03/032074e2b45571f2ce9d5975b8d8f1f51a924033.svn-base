@@ -1,0 +1,14 @@
+package com.zhizaolian.staff.service;
+
+import com.zhizaolian.staff.utils.ListResult;
+import com.zhizaolian.staff.vo.AssetVO;
+
+public interface AssetService {
+	Integer addAsset(AssetVO assetVO);
+	
+	public ListResult<AssetVO> findAssetList(AssetVO assetVO,int limit,int page);
+	
+	AssetVO getAssetByID(Integer assetID);
+
+
+}

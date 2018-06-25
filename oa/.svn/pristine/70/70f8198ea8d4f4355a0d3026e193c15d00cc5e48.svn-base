@@ -1,0 +1,16 @@
+package com.zhizaolian.staff.service;
+
+import com.zhizaolian.staff.entity.VehicleInfoEntity;
+import com.zhizaolian.staff.utils.ListResult;
+
+public interface VehicleService {
+
+	void saveVehicle(VehicleInfoEntity vehicleVo);
+
+	ListResult<VehicleInfoEntity> findVehicleList(String licenseNumber, Integer limit, Integer page) throws Exception;
+
+	VehicleInfoEntity getVehicleDetails(String id) throws Exception;
+
+	void deleteVehicle(String id);
+
+}

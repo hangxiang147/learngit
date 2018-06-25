@@ -1,0 +1,198 @@
+package com.zhizaolian.staff.action;
+
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.List;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import org.activiti.engine.IdentityService;
+import org.activiti.engine.TaskService;
+import org.activiti.engine.identity.Group;
+import org.activiti.engine.identity.User;
+import org.apache.struts2.ServletActionContext;
+import org.apache.struts2.interceptor.ServletRequestAware;
+import org.springframework.beans.factory.annotation.Autowired;
+
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.serializer.SerializerFeature;
+import com.opensymphony.xwork2.Action;
+import com.opensymphony.xwork2.ActionSupport;
+import com.zhizaolian.staff.enums.Constants;
+import com.zhizaolian.staff.enums.TaskDefKeyEnum;
+import com.zhizaolian.staff.service.FormalService;
+import com.zhizaolian.staff.service.NoticeService;
+import com.zhizaolian.staff.service.ProcessService;
+import com.zhizaolian.staff.service.ReimbursementService;
+import com.zhizaolian.staff.service.ResignationService;
+import com.zhizaolian.staff.service.SigninService;
+import com.zhizaolian.staff.service.VacationService;
+import com.zhizaolian.staff.utils.DateUtil;
+
+import lombok.Getter;
+
+public class BaseAction extends ActionSupport implements Action, ServletRequestAware {
+
+	private static final long serialVersionUID = 1L;
+	public HttpServletRequest request;
+	@Getter
+	public int count = 0;
+	@Getter
+	public int vacationCount = 0;
+	@Getter
+	public int resignationHRCount = 0;
+	@Getter
+	public int resignationPMCount = 0;
+	@Getter
+	public int formalHRCount = 0;
+	@Getter
+	public int reimbursementCount = 0;
+	@Getter
+	public int advanceCount=0;
+	@Getter
+	public int emailCount = 0;
+	@Getter
+	public int cardCount = 0;
+	@Getter
+	public int auditHRCount = 0;
+	@Getter
+	public int socialSecurityHRCount = 0;
+	@Getter
+	public int hasSignin;
+	@Getter
+	public int unReadNoticeCount = 0;
+	@Getter
+	public int  bussinessTripCount=0;
+	@Getter
+	public int socialSecurityCount = 0;	
+	@Autowired
+	private TaskService taskService;
+	@Autowired
+	private IdentityService identityService;
+	@Autowired
+	private VacationService vacationService;
+	@Autowired
+	private ResignationService resignationService;
+	@Autowired
+	private  ReimbursementService reimbursementService;
+	@Autowired
+	private FormalService formalService;
+	@Autowired
+	private ProcessService processService;
+	@Autowired
+	private SigninService signinService;
+	@Autowired
+	private NoticeService noticeService;
+	
+	public String execute() throws Exception {
+		return "";
+	}
+	
+	public void setServletRequest(HttpServletRequest request) {  
+        this.request = request;  
+        User user = (User) request.getSession().getAttribute("user");
+		if (user != null) {
+			count = (int) taskService.createTaskQuery().taskAssignee(user.getId()).count();
+			count += taskService.createTaskQuery().processDefinitionKey(Constants.PURCHASE_PROPERTY).taskCandidateUser(user.getId()).count();
+			List<Group> groups = identityService.createGroupQuery().groupMember(user.getId()).list();
+			if (groups.size() > 0) {
+				vacationCount = vacationService.findVacationTasksByGroups(groups, 0, 1).getTotalCount();
+				List<TaskDefKeyEnum> tasks = new ArrayList<TaskDefKeyEnum>();
+				tasks.add(TaskDefKeyEnum.HR_AUDIT);
+				tasks.add(TaskDefKeyEnum.RESIGNATION_TRANSFER);
+				resignationHRCount = resignationService.findResignationTasksByUserGroupIDs(tasks, groups, Arrays.asList(user.getId()), 0, 1).getTotalCount();
+				tasks.clear();
+				tasks.add(TaskDefKeyEnum.SALARY_SETTLEMENT);
+				resignationPMCount = resignationService.findResignationTasksByGroups(groups, tasks, 0, 1).getTotalCount();
+				tasks.clear();
+				tasks.add(TaskDefKeyEnum.FORMAL_HR_AUDIT);
+				tasks.add(TaskDefKeyEnum.FORMAL_INVITATION);
+				formalHRCount = formalService.findFormalTasksByUserGroupIDs(tasks, groups, Arrays.asList(user.getId()), 0, 1).getTotalCount();
+				tasks.clear();
+				tasks.add(TaskDefKeyEnum.FINANCIAL_SECOND_AUDIT);
+				tasks.add(TaskDefKeyEnum.REMIT_MONEY);
+				tasks.add(TaskDefKeyEnum.FINANCIAL_FIRST_AUDIT);
+				reimbursementCount = reimbursementService.findReimbursementsByUserGroupIDs(tasks, groups, Arrays.asList(user.getId()), null, null, null, 0, 1).getTotalCount();
+				tasks.clear();
+				tasks.add(TaskDefKeyEnum.FINANCIAL_SECOND_AUDIT);
+				tasks.add(TaskDefKeyEnum.REMIT_MONEY);
+				tasks.add(TaskDefKeyEnum.FINANCIAL_FIRST_AUDIT);
+				advanceCount = reimbursementService.findAdvancessByUserGroupIDs(tasks, groups, Arrays.asList(user.getId()), null, null, null, 0, 1).getTotalCount();
+				tasks.clear();
+				tasks.add(TaskDefKeyEnum.EMAIL_AUDIT);
+				tasks.add(TaskDefKeyEnum.OPEN_MAILBOX);
+				emailCount = processService.findTasksByUserGroupIDs(tasks, groups, Arrays.asList(user.getId()), 0, 1).getTotalCount();
+				tasks.clear();
+				tasks.add(TaskDefKeyEnum.CARD_AUDIT);
+				tasks.add(TaskDefKeyEnum.MAKE_CARD);
+				cardCount = processService.findTasksByUserGroupIDs(tasks, groups, Arrays.asList(user.getId()), 0, 1).getTotalCount();
+				tasks.clear();
+				tasks.add(TaskDefKeyEnum.AUDIT_HR_AUDIT);
+				auditHRCount = processService.findTasksByUserGroupIDs(tasks, groups, Arrays.asList(user.getId()), 0, 1).getTotalCount();
+				tasks.clear();
+				tasks.add(TaskDefKeyEnum.BUSSINESSTRIP_BUYTICKET);
+				tasks.add(TaskDefKeyEnum.BUSSINESSTRIP_CONFIRM);
+				bussinessTripCount=processService.findTasksByUserGroupIDs(tasks, groups, Arrays.asList(user.getId()), 0, 1).getTotalCount();
+				tasks.clear();
+				tasks.add(TaskDefKeyEnum.SS_HR_UPDATE);
+				tasks.add(TaskDefKeyEnum.SS_FOLLOW_UP);
+				socialSecurityHRCount = processService.findTasksByUserGroupIDs(tasks, groups, Arrays.asList(user.getId()), 0, 1).getTotalCount();
+				tasks.clear();
+				tasks.add(TaskDefKeyEnum.SS_FINANCIAL_PROCESSING);
+				socialSecurityCount = processService.findTasksByUserGroupIDs(tasks, groups, Arrays.asList(user.getId()), 0, 1).getTotalCount();	
+				tasks.clear();
+			}
+			Date date=new Date();
+			hasSignin = signinService.findSingleByDateUserID(DateUtil.getSimpleDate(DateUtil.formateDate(date)), user.getId());
+			unReadNoticeCount = noticeService.countUnReadNoticeByUserID(user.getId());
+		}
+    }
+	
+	 protected void printByJson(Object object)
+	  {
+	     printByJson(object, "application/json");
+	 }
+	 
+	 protected void printByJson(Object obj, String type) {
+			PrintWriter out = null;
+			HttpServletResponse httpServletResponse = ServletActionContext.getResponse();
+			httpServletResponse.setContentType(type);
+			httpServletResponse.setCharacterEncoding("utf-8");
+			String json = null;
+			try {
+				out = httpServletResponse.getWriter();
+				json = JSON.toJSONStringWithDateFormat(obj, "yyyy-MM-dd HH:mm:ss", new SerializerFeature[0]);
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+			out.print(json);
+			out.close();
+	}
+	 
+	 protected void printByJson(String str, String type) {
+			PrintWriter out = null;
+			HttpServletResponse httpServletResponse = ServletActionContext.getResponse();
+			httpServletResponse.setContentType(type);
+			httpServletResponse.setCharacterEncoding("utf-8");
+			try {
+				out = httpServletResponse.getWriter();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+			out.print(str);
+			out.close();
+	}
+	 
+	 private final static String SUCCESS="{\"success\":true}";
+	 private final static String FAIL="{\"success\":false,\"extraMsg\":\"@R\"}";
+	 protected void returnSuccess(){
+		 printByJson(SUCCESS);
+	 }
+	 protected void returnFail(String extraMsg){
+		 printByJson(FAIL.replace("@R", extraMsg));
+	 }
+}

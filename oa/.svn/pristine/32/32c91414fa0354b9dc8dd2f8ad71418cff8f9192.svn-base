@@ -1,0 +1,131 @@
+package com.zhizaolian.staff.action.administration;
+
+import org.springframework.beans.factory.annotation.Autowired;
+
+import com.zhizaolian.staff.action.BaseAction;
+import com.zhizaolian.staff.entity.VehicleInfoEntity;
+import com.zhizaolian.staff.service.VehicleService;
+import com.zhizaolian.staff.utils.ListResult;
+import com.zhizaolian.staff.utils.ObjectByteArrTransformer;
+import com.zhizaolian.staff.vo.InsuranceRecord;
+import com.zhizaolian.staff.vo.MaintainRecord;
+import com.zhizaolian.staff.vo.RepairRecordVo;
+import com.zhizaolian.staff.vo.VehicleUseRecord;
+import com.zhizaolian.staff.vo.YearlyInspectionVo;
+
+import lombok.Getter;
+import lombok.Setter;
+
+public class VehicleAction extends BaseAction{
+	
+	private static final long serialVersionUID = 3130439647130619264L;
+	@Setter
+	@Getter
+	private VehicleInfoEntity vehicleVo;
+	@Setter
+	@Getter
+	private InsuranceRecord insuranceRecord;
+	@Setter
+	@Getter
+	private YearlyInspectionVo yearlyInspectionVo;
+	@Setter
+	@Getter
+	private MaintainRecord maintainRecord;
+	@Setter
+	@Getter
+	private RepairRecordVo repairRecord;
+	@Setter
+	@Getter
+	private VehicleUseRecord vehicleUseRecord;
+	@Autowired
+	private VehicleService vehicleService;
+	@Getter
+	private String errorMessage;
+	@Getter
+	private String selectedPanel;
+	@Getter
+	@Setter
+	private Integer limit = 20;
+	@Getter
+	@Setter
+	private Integer page = 1;
+	@Getter
+	private Integer totalPage = 1;
+	
+	public String findVehicleList(){
+		String licenseNumber = request.getParameter("licenseNumber");
+		try {
+			ListResult<VehicleInfoEntity> VehicleInfoList = vehicleService.findVehicleList(licenseNumber, limit, page);
+			int count = VehicleInfoList.getTotalCount();
+			totalPage = count % limit == 0 ? count / limit : count / limit + 1;
+			request.setAttribute("VehicleInfoList", VehicleInfoList.getList());
+		} catch (Exception e) {
+			e.printStackTrace();
+			errorMessage = e.getMessage();
+			return "error";
+		}
+		request.setAttribute("licenseNumber", licenseNumber);
+		selectedPanel = "vehicleManage";
+		return "findVehicleList";
+	}
+	public String addVehicle(){
+		selectedPanel = "vehicleManage";
+		return "addVehicle";
+	}
+	public String saveVehicle(){
+		try {
+			if(null!=insuranceRecord){
+				vehicleVo.setInsuranceRecord(ObjectByteArrTransformer.toByteArray(insuranceRecord));
+			}
+			if(null!=yearlyInspectionVo){
+				vehicleVo.setYearlyInspectionRecord(ObjectByteArrTransformer.toByteArray(yearlyInspectionVo));
+			}
+			if(null!=maintainRecord){
+				vehicleVo.setMaintainRecord(ObjectByteArrTransformer.toByteArray(maintainRecord));
+			}
+			if(null!=repairRecord){
+				vehicleVo.setRepairRecord(ObjectByteArrTransformer.toByteArray(repairRecord));
+			}
+			if(null!=vehicleUseRecord){
+				vehicleVo.setVehicleUseRecord(ObjectByteArrTransformer.toByteArray(vehicleUseRecord));
+			}
+			vehicleService.saveVehicle(vehicleVo);
+			selectedPanel = "vehicleManage";
+		} catch (Exception e) {
+			e.printStackTrace();
+			errorMessage = e.getMessage();
+			return "error";
+		}
+		return "render_findVehicleList";
+	}
+	public String showVehicleDetails(){
+		String id = request.getParameter("id");
+		try {
+			vehicleVo = vehicleService.getVehicleDetails(id);
+		} catch (Exception e) {
+			e.printStackTrace();
+			errorMessage = e.getMessage();
+			return "error";
+		}
+		selectedPanel = "vehicleManage";
+		return "showVehicleDetails";
+	}
+	public String deleteVehicle(){
+		String id = request.getParameter("id");
+		vehicleService.deleteVehicle(id);
+		selectedPanel = "vehicleManage";
+		return "render_findVehicleList";
+	}
+	public String updateVehicleInfo(){
+		String id = request.getParameter("id");
+		try {
+			vehicleVo = vehicleService.getVehicleDetails(id);
+		} catch (Exception e) {
+			e.printStackTrace();
+			errorMessage = e.getMessage();
+			return "error";
+		}
+		selectedPanel = "vehicleManage";
+		return "updateVehicleInfo";
+	}
+}

@@ -1,0 +1,249 @@
+package com.zhizaolian.staff.action;
+
+
+
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.util.Date;
+import java.util.List;
+import java.util.UUID;
+
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+
+import com.zhizaolian.staff.entity.CommonAttachment;
+import com.zhizaolian.staff.enums.AttachmentType;
+import com.zhizaolian.staff.service.NoticeService;
+import com.zhizaolian.staff.service.TrainService;
+import com.zhizaolian.staff.utils.ListResult;
+import com.zhizaolian.staff.vo.TrainParticipantVO;
+import com.zhizaolian.staff.vo.TrainVO;
+
+import lombok.Getter;
+import lombok.Setter;
+import net.sf.json.JSONArray;
+
+public class TrainAction extends BaseAction {
+	
+	private static final long serialVersionUID = 1L;
+	
+	@Getter
+	private String selectedPanel;
+	@Getter
+	@Setter
+	private String panel;
+	@Getter
+	private String errorMessage;
+	@Setter
+	@Getter
+	private Integer page = 1;
+	@Setter
+	@Getter
+	private Integer limit = 20;
+	@Getter
+	private Integer totalPage;
+	@Getter
+	@Setter
+	private TrainVO trainVO;
+	@Getter
+	@Setter
+	private TrainParticipantVO trainParticipantVO;
+	@Autowired
+	private TrainService trainService;
+	@Autowired
+	private NoticeService noticeService;
+	
+	public String findTrainList() {
+		if(trainVO==null){
+			trainVO=new TrainVO();			
+		}
+		try {
+			
+			ListResult<TrainVO> trainList = trainService.findTrainList(trainVO, page, limit);
+			int totalCount = trainList.getTotalCount();
+			totalPage = totalCount%limit==0 ? totalCount/limit : totalCount/limit+1;
+			if(totalPage==0)
+				totalPage = 1;			
+			request.setAttribute("trainList", trainList.getList()); //保存培训集合
+		} catch (Exception e) {
+			errorMessage = "查询失败："+e.getMessage();
+			selectedPanel = "trainList";
+			StringWriter sw = new StringWriter(); 
+			e.printStackTrace(new PrintWriter(sw, true)); 
+			logger.error(sw.toString());
+			return "error";
+		}
+		
+		
+		selectedPanel = "trainList";
+		return "trainList";
+	}
+	
+	
+	
+	public String saveTrain(){
+		try{
+			trainAttachMentSave(trainService.addRecord(trainVO));
+		}catch(Exception e){
+			errorMessage = "获取失败："+e.getMessage();
+			e.printStackTrace();
+			StringWriter sw = new StringWriter(); 
+			e.printStackTrace(new PrintWriter(sw, true)); 
+			logger.error(sw.toString());
+			return "error";
+		}
+		selectedPanel = "trainList";
+		return "saveTrain";
+	}
+	@Getter
+	@Setter
+	private File[] files;
+	public void trainAttachMentSave(Integer fid) {
+		String root = "/usr/local/download";
+		File parent = new File(root + "/" + "trainAttachment");
+		parent.mkdirs();
+		String fileDetail = request.getParameter("fileDetail");
+		if (StringUtils.isNotBlank(fileDetail)) {
+			@SuppressWarnings("unchecked")
+			List<Object> fileDetailList = JSONArray.fromObject(fileDetail);
+			if (CollectionUtils.isNotEmpty(fileDetailList)) {
+				int i = 0;
+				for (Object object : fileDetailList) {
+					@SuppressWarnings("unchecked")
+					List<String> currentDetail = (List<String>) object;
+					String fileName = currentDetail.get(0);
+					String fileSuffix = currentDetail.get(1);
+					String saveName = UUID.randomUUID().toString()
+							.replaceAll("-", "") + fileName;
+					InputStream in = null;
+					OutputStream out = null;
+					try {
+						in = new FileInputStream(files[i]);
+						out = new FileOutputStream(new File(parent, saveName));
+						byte[] buffer = new byte[10 * 1024 * 1024];
+						int length = 0;
+						while ((length = in.read(buffer, 0,
+								buffer.length)) != -1) {
+							out.write(buffer, 0, length);
+							out.flush();
+						}
+						if (!files[i].exists()) {
+							files[i].createNewFile();
+						}
+						CommonAttachment commonAttachment=new CommonAttachment();
+						commonAttachment.setForeign_ID(fid);
+						commonAttachment.setAddTime(new Date());
+						commonAttachment.setType(AttachmentType.TRAIN.getIndex());
+						commonAttachment.setIsDeleted(0);
+						commonAttachment.setSoftURL(root+"/trainAttachment/"+saveName);
+						commonAttachment.setSize((float)Math.round(files[i].length()/1024/1024*10)/10+"");
+						commonAttachment.setSoftName(fileName);
+						commonAttachment.setSortIndex(i);
+						commonAttachment.setSuffix(fileSuffix);
+						noticeService.saveAttachMent(commonAttachment);
+					} catch (IOException e) {
+						e.printStackTrace();
+						StringWriter sw = new StringWriter(); 
+						e.printStackTrace(new PrintWriter(sw, true)); 
+						logger.error(sw.toString());
+					} finally {
+						try {
+							if (in != null)
+								in.close();
+							if (out != null)
+								out.close();
+						} catch (IOException e) {
+							e.printStackTrace();
+						}
+					}
+					i++;
+				}
+			}
+		}
+	}
+	
+	public String findTrain(){
+		int trainID =Integer.parseInt(request.getParameter("trainID"));
+		TrainVO trainVO=trainService.getTrainByID(trainID);
+		request.setAttribute("trainVO", trainVO);
+		
+		selectedPanel = "trainList";
+		return "updateTrain";
+	}
+
+	public String findTrainDetail(){
+		int trainID =Integer.parseInt(request.getParameter("trainID"));
+		TrainVO trainVO=trainService.getTrainByID(trainID);
+		request.setAttribute("trainVO", trainVO);
+		List<CommonAttachment> attas =noticeService.getCommonAttachmentByFID(trainVO.getTrainID(),AttachmentType.TRAIN);
+		request.setAttribute("attas", attas);
+		selectedPanel = "trainList";
+		return "trainDetail";
+	}
+	public String followTrain(){
+		int trainID =Integer.parseInt(request.getParameter("trainID"));
+		TrainVO trainVO=trainService.getTrainByID(trainID);
+		request.setAttribute("trainVO", trainVO);
+		selectedPanel = "trainList";
+		return "followTrain";
+	}
+	
+	public String updateTrain(){
+		try{
+			trainService.updateRecord(trainVO, trainVO.getTrainID());
+			
+		}catch(Exception e){
+			errorMessage = "更新失败："+e.getMessage();
+			e.printStackTrace();
+			StringWriter sw = new StringWriter(); 
+			e.printStackTrace(new PrintWriter(sw, true)); 
+			logger.error(sw.toString());
+			return "error";
+		}
+		selectedPanel = "trainList";
+		return "saveTrain";
+	}
+	
+	public String deleteParticipant(){
+		try{
+			String userID = request.getParameter("userID");
+			int trainID =Integer.parseInt(request.getParameter("trainID"));
+			trainService.deleteParticipant(trainID, userID);
+		}catch(Exception e){
+			errorMessage = "删除失败："+e.getMessage();
+			e.printStackTrace();
+			StringWriter sw = new StringWriter(); 
+			e.printStackTrace(new PrintWriter(sw, true)); 
+			logger.error(sw.toString());
+			return "error";
+		}
+		selectedPanel = "trainList";
+		return "updateTrain";
+	}
+	
+	public String deleteTrain(){
+		try{
+			int trainID =Integer.parseInt(request.getParameter("trainID"));
+			trainService.deleteTrain(trainID);
+		}catch(Exception e){
+			errorMessage = "删除失败："+e.getMessage();
+			e.printStackTrace();
+			StringWriter sw = new StringWriter(); 
+			e.printStackTrace(new PrintWriter(sw, true)); 
+			logger.error(sw.toString());
+			return "error";
+		}		
+		selectedPanel = "trainList";
+		return "deleteTrain";
+		
+	}
+
+}

@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE struts PUBLIC
+	"-//Apache Software Foundation//DTD Struts Configuration 2.3//EN"
+	"http://struts.apache.org/dtds/struts-2.3.dtd">
+
+<struts>
+    <package name="appBase" namespace="/app" extends="json-default">
+        <action name="*" class="appLoginAction" method="{1}" >
+        </action>
+    </package>
+    
+    <package name="appPersonal" namespace="/app/personal" extends="json-default">
+        <action name="*" class="appPersonalAction" method="{1}">
+         <result name="vacationAttachmentAll" type="stream">
+               	<param name="inputName">vacationPicture</param>  
+	        	<param name="contentType">text/plain</param>  
+               	<param name="contentDisposition">attachment;fileName="${downloadFileFileName}"</param>  
+               	<param name="bufferSize">1024*1024*10</param>  
+	        </result>
+	        <result name="downloadAttchment" type="stream">
+               	<param name="inputName">attachment</param>  
+	        	<param name="contentType">text/plain</param>  
+               	<param name="contentDisposition">attachment;fileName="${attachmentName}"</param>  
+               	<param name="bufferSize">1024*1024*10</param>  
+	        </result>
+	        <result name="downloadPic" type="stream">
+               	<param name="inputName">attachment</param>  
+	        	<param name="contentType">image/jpeg</param>  
+               	<param name="contentDisposition">inline;fileName="${attachmentName}"</param>  
+               	<param name="bufferSize">1024*1024*10</param>  
+	        </result>
+        </action>
+    </package>
+     <package name="appAssignment" namespace="/app/assignmentEdit" extends="json-default">
+        <action name="*" class="appAssignmentAction" method="{1}">
+        </action>
+    </package>
+    
+    <package name="appVersion" namespace="/app/version" extends="json-default">
+    	<action name="*" class="appVersionAction" method="{1}">
+    	</action>
+    </package>
+    
+    <package name="reimbursement" namespace="/app/reimbursement" extends="json-default">
+    	<action name="*" class="appReimbursementAction" method="{1}">
+    	</action>
+    </package>
+    
+    <package name="appChop" namespace="/app/chop" extends="json-default">
+    	<action name="*" class="appChop" method="{1}">
+    	</action>
+    </package>
+    <package name="appAttendance" namespace="/app/attendance" extends="json-default">
+    	<action name="*" class="appAttendanceAction" method="{1}">
+    	</action>
+    </package>
+    <package name="appProblemOrder" namespace="/app/problemOrder" extends="json-default">
+    	<action name="save_*" class="appProblemOrderAction" method="{1}">			
+	        <interceptor-ref name="token" />
+	        <interceptor-ref name="defaultStack"/>	       
+		</action>
+    	<action name="*" class="appProblemOrderAction" method="{1}">
+    		<result name="attachmentSave" type="json">
+	        	<param name="includeProperties">error,url</param>
+	        </result>	
+	        <result name="downloadPic" type="stream">
+               	<param name="inputName">inputStream</param>  
+	        	<param name="contentType">image/jpeg</param>  
+               	<param name="contentDisposition">inline;fileName="${attachmentName}"</param>  
+               	<param name="bufferSize">1024*1024*10</param>  
+	        </result> 
+	        <result name="showImage" type="stream">
+	        	<param name="inputName">inputStream</param>  
+	        	<param name="bufferSize">1024</param>  
+	        </result>
+    	</action>
+    </package>
+</struts>

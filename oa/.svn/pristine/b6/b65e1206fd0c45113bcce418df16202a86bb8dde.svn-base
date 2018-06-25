@@ -1,0 +1,9 @@
+package com.zhizaolian.staff.service.impl;
+
+import org.springframework.stereotype.Service;
+
+import com.zhizaolian.staff.service.PerformanceService;
+@Service
+public class PerformanceServiceImpl implements PerformanceService {
+
+}

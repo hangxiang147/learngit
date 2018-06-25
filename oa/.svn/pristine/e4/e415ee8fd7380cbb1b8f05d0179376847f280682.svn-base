@@ -1,0 +1,40 @@
+body{font:inherit;vertical-align:baseline;font-family: "Century Gothic","MicroSoft YaHei","hiragino sans GB","Helvetica Neue",Helvetica,Arial,sans-serif;font-size:14px;color:#444444;-webkit-font-smoothing:antialiased;min-width:1200px;}
+html,body{overflow-x:hidden;}
+input,button{font-family:"Century Gothic","MicroSoft YaHei","hiragino sans GB","Helvetica Neue",Helvetica,Arial,sans-serif;font-size:14px;}
+ul,form,p,h1,i,em{margin:0px;padding:0px;}
+i{list-style:none;font-style:normal;font-weight:normal;}
+li{list-style-type:none;vertical-align:bottom}
+button,submit{cursor:pointer;}
+*{margin:auto;}
+a{text-decoration:none;color:#222222;}
+a:hover{color:#c40013;}
+input,button,select,textarea{outline:none;}
+img{border:0px;}
+table{border-collapse:collapse;}
+table tr td{word-wrap:break-word;}
+
+.input1{color:#666666;height:24px;line-height:24px;border:1px solid #dddddd;text-align:center;}
+.textareaA{color:#666666;height:atuto;border:1px solid #dddddd;padding:5px 10px;width:100%;box-sizing:border-box;-moz-box-sizing:border-box;-webkit-box-sizing:border-box;}
+.input1:hover,.textareaA:hover{border:1px solid #4693ec;}
+.input1.error,.textareaA.error{border:1px solid #ea5b5d;color:#ea5b5d;}
+
+
+.wrap{max-width:1200px;padding:10px 0px;}
+.lmtitle{line-height:40px;height:40px;text-align:center;font-size:18px;}
+.check_information{*zoom:1;height:auto;margin-top:20px;}
+.check_information:after{display:block;visibility:hidden;clear:both;overflow:hidden;height:0;content:"\0020";}
+.check_information div{float:left;height:34px;line-height:34px;width:33.33%;}
+.check_information div span{display:inline-block;}
+.check_information div span.item1{color:#666;}
+.check_information div span.item2{color:#000;}
+.check_result{}
+.check_tab{color:#555555;box-shadow:0px 1px 5px #dddddd;margin-top:20px;}
+.check_tab table{width:100%;border-collapse:collapse;}
+.check_tab table tr td{border:1px solid #ddd;height:auto;line-height:20px;padding:10px 10px;word-wrap:break-word;}
+.check_tab table thead tr td{color:#000;background:#f1f1f1;text-align:center;}
+.check_tab table tbody tr td{color:#888;}
+.check_tab table tbody tr td.tc{text-align:center;}
+.check_tab table tr td p{padding:4px 0px;}
+.tabtc td{text-align:center;}
+.check_btn{text-align:right;margin-top:20px;}
+.check_btn input{width:100px;height:40px;line-height:40px;border:0px;-webkit-appearance:none;white-space:nowrap;background:#428bca;font-size:16px;color: #fff;cursor:pointer;border-radius:2px;-webkit-border-radius:2px;-moz-border-radius:2px;}

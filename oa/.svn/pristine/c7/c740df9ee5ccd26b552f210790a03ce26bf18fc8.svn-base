@@ -1,0 +1,26 @@
+package com.zhizaolian.staff.action.administration;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Scope;
+import org.springframework.stereotype.Controller;
+
+import com.zhizaolian.staff.action.BaseAction;
+import com.zhizaolian.staff.service.PerformanceService;
+
+import lombok.Getter;
+
+@Controller
+@Scope(value="prototype")
+public class PerformanceAction extends BaseAction{
+	
+	private static final long serialVersionUID = 4665852269778253965L;
+	@Getter
+	private String selectedPanel;
+	@Autowired
+	private PerformanceService performanceService;
+	
+	public String showPerformanceDiagram(){
+		selectedPanel = "createPerformanceCase";
+		return "showPerformanceDiagram";
+	}
+}

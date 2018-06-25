@@ -1,0 +1,115 @@
+package com.zhizaolian.staff.service.impl;
+
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+
+
+import org.springframework.beans.factory.annotation.Autowired;
+
+import com.zhizaolian.staff.dao.AssetDao;
+import com.zhizaolian.staff.entity.AssetEntity;
+import com.zhizaolian.staff.enums.IsDeletedEnum;
+import com.zhizaolian.staff.service.AssetService;
+import com.zhizaolian.staff.service.AssetUsageService;
+import com.zhizaolian.staff.transformer.AssetVOTransFormer;
+import com.zhizaolian.staff.utils.DateUtil;import com.zhizaolian.staff.utils.ListResult;
+import com.zhizaolian.staff.vo.AssetUsageVO;
+import com.zhizaolian.staff.vo.AssetVO;
+
+
+
+public class AssetServiceImpl implements AssetService {
+	@Autowired	
+	private AssetDao assetDao;
+	@Autowired
+	private AssetUsageService assetUsageService;
+
+	@Override
+	public Integer addAsset(AssetVO assetVO) {
+		AssetEntity assetEntity=new AssetEntity();
+		Date date=new Date();
+		
+		assetEntity.setAssetName(assetVO.getAssetName());
+		assetEntity.setSerialNumber(assetVO.getSerialNumber());
+		assetEntity.setType(assetVO.getType());
+		assetEntity.setModel(assetVO.getModel());
+		assetEntity.setAmount(assetVO.getAmount());
+		assetEntity.setCompanyID(assetVO.getCompanyID());
+		assetEntity.setPurchaseTime(DateUtil.getSimpleDate(assetVO.getPurchaseTime()));
+		assetEntity.setStorageLocation(assetVO.getStorageLocation());
+		assetEntity.setStatus(assetVO.getStatus());
+		assetEntity.setIsDeleted(IsDeletedEnum.NOT_DELETED.getValue());
+		assetEntity.setAddTime(date);
+		assetEntity.setUpdateTime(date);
+		assetDao.save(assetEntity);
+		return assetEntity.getAssetID();
+		
+	}
+
+	@Override
+	public ListResult<AssetVO> findAssetList(AssetVO assetVO1, int limit, int page) {
+		ListResult<AssetEntity> assetList=assetDao.findAssetList(getQuerySqlByAssetVO(assetVO1),getQueryCountSqlByAssetVO(assetVO1), page, limit);
+		List<AssetVO> list=new ArrayList<AssetVO>();
+		for(AssetEntity assetEntity:assetList.getList()){ 
+			AssetVO assetVO=AssetVOTransFormer.entityToVO(assetEntity);
+			AssetUsageVO assetUsageVO=assetUsageService.getAssstUsageByAssetID1(assetVO.getAssetID());
+			assetVO.setAssetUsageVO(assetUsageVO);
+			
+			list.add(assetVO);
+			
+		}
+		return  new ListResult<AssetVO>(list,assetList.getTotalCount());
+	}
+	
+	
+	private String getQuerySqlByAssetVO(AssetVO assetVO){
+		StringBuffer hql=new StringBuffer("FROM AssetEntity asset WHERE asset.isDeleted = 0");
+		hql.append(getWhereByAssetVO(assetVO));
+		hql.append(" order by asset.addTime desc");
+		return hql.toString();
+		
+	}
+	
+	private String getWhereByAssetVO(AssetVO assetVO){
+		StringBuffer whereSql=new StringBuffer("");
+		if(assetVO.getCompanyID()!=null){
+			whereSql.append(" and asset.companyID='"+assetVO.getCompanyID()+"'");
+			
+		}
+		if(assetVO.getAssetName()!=null){
+			whereSql.append(" and asset.assetName like'%"+assetVO.getAssetName()+"%'");
+			
+		}
+		if(assetVO.getSerialNumber()!=null){
+			whereSql.append(" and asset.serialNumber like '%"+assetVO.getSerialNumber()+"%'");
+			
+		}
+		if(assetVO.getStatus()!=null){
+			whereSql.append(" and asset.status='"+assetVO.getStatus()+"'");
+			
+		}
+		if(assetVO.getType()!=null){
+			whereSql.append(" and asset.type='"+assetVO.getType()+"'");
+			
+		}
+		return whereSql.toString();
+		
+	}
+
+	
+	private String getQueryCountSqlByAssetVO(AssetVO assetVO){
+		StringBuffer hql=new StringBuffer("SELECT COUNT(*)FROM AssetEntity asset WHERE asset.isDeleted = 0");
+		hql.append(getWhereByAssetVO(assetVO));
+		return hql.toString();
+		
+		
+	}
+	@Override
+	public AssetVO getAssetByID(Integer assetID) {
+		AssetEntity assetEntity=assetDao.getAssetByID(assetID);
+		AssetVO assetVO=AssetVOTransFormer.entityToVO(assetEntity);
+		return assetVO;
+	}
+
+}

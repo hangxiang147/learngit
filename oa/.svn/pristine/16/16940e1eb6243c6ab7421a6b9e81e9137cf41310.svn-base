@@ -1,0 +1,384 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8"
+    pageEncoding="UTF-8"%>
+<%@ taglib prefix="s" uri="/struts-tags" %>
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %> 
+<%@  taglib  uri="http://java.sun.com/jsp/jstl/functions" prefix="fn"%>
+<!DOCTYPE html> 
+<html lang="zh-CN">
+
+<head>
+<script src="/assets/js/layer/layer.js"></script>
+<script src="/assets/icon/iconfont.js"></script>
+<script type="text/javascript">
+	 $(function() {
+		$("[data-toggle='tooltip']").tooltip();
+		set_href();
+		var departmentLevel = new Number($("#departmentLevel").val());
+		$("#department"+departmentLevel).attr("name", "vacationVO.departmentID");
+		
+		//修改页面后 需要 reload 上次请求的地址
+		var tryReload=(function (){
+			if(localStorage.needReload=== "true"){
+				localStorage.needReload=false;
+				location.href=localStorage.lastUrl;
+			}
+			localStorage.lastUrl=location.href;
+		})()
+		
+	}); 
+ function showDepartment(obj, level) {
+		level = level+1;
+		$(".department"+level).remove();
+		$(".department1 select").removeAttr("name");
+		if ($(obj).val() == '') {
+			if (level > 2) {
+				$("#department"+(level-2)).attr("name", "vacationVO.departmentID");
+			}
+			return;
+		}
+		
+		var parentID = 0;
+		if (level != 1) {
+			parentID = $(obj).val();
+			$(obj).attr("name", "vacationVO.departmentID");
+		}
+		$.ajax({
+			url:'HR/staff/findDepartmentsByCompanyIDParentID',
+			type:'post',
+			data:{companyID: $("#company").val(),
+				  parentID: parentID},
+			dataType:'json',
+			success:function (data){
+				if (data.errorMessage!=null && data.errorMessage.length!=0) {
+					if (level == 1) {
+						window.location.href = "HR/staff/error?panel=dangan&errorMessage="+encodeURI(encodeURI(data.errorMessage));
+					} else {
+						return;
+					}
+				}
+				
+				var divObj = $("#"+$(obj).attr('id')+"_div");
+				$(divObj).after("<div id=\"department"+level+"_div\" class=\""+$(divObj).attr('class')+" department"+level+"\">"
+							+"<select class=\"form-control\" id=\"department"+level+"\" onchange=\"showDepartment(this, "+level+")\" >"
+							+"<option value=\"\">--"+level+"级部门--</option></select>"
+							+"</div>");
+				$.each(data.departmentVOs, function(i, department) {
+					$("#department"+level).append("<option value='"+department.departmentID+"'>"+department.departmentName+"</option>");
+				});
+			}
+		});
+	}
+	 
+	 
+	function search() {
+		window.location.href = "attendance/vacationManagement?" + $("#trainForm").serialize();
+		Load.Base.LoadingPic.FullScreenShow(null);
+	}
+	
+	function deleteVacation(obj) {
+		layer.confirm("确认删除该请假信息？", {offset:'100px'}, function(index){
+			layer.close(index);
+			var vacationID = $(obj).attr("data-vacationID");
+			Load.Base.LoadingPic.FullScreenShow(null);
+			$.ajax({
+				url:'attendance/deleteVacation',
+				type:'post',
+				data:{vacationID:vacationID},
+				dataType:'json',
+				success:function (data) {
+					if (data.errorMessage!=null && data.errorMessage.length!=0) {
+						window.location.href = "attendance/error?panel=vacationManagement&errorMessage="+encodeURI(encodeURI(data.errorMessage));
+						return;
+					}
+					layer.alert("删除成功！", {offset:'100px'}, function(index){
+						layer.close(index);
+						window.location.href = "attendance/vacationManagement";
+						Load.Base.LoadingPic.FullScreenShow(null);
+					});
+				},
+				complete:function(){
+					Load.Base.LoadingPic.FullScreenHide();
+					}
+			});
+		});
+	}
+	function showVacationUsers(vacationId){
+		Load.Base.LoadingPic.FullScreenShow(null);
+		$.ajax({
+			url:'attendance/findVacationUsers',
+			data:{'vacationId':vacationId},
+			success:function(data){
+				layer.alert(data.vacationUsers, {title:'请假人员', offset:'100px'});
+			},
+			complete:function(){
+				Load.Base.LoadingPic.FullScreenHide();
+				}
+		});
+	}
+</script>
+<style type="text/css">
+	.icon {
+width: 1.5em; height: 1.5em;
+vertical-align: -0.15em;
+fill: currentColor;
+overflow: hidden;
+}
+</style>
+</head>
+  <body>
+
+    <div class="container-fluid">
+      <div class="row">
+      	<s:set name="panel" value="'process'"></s:set>
+        <%@include file="/pages/attendance/panel.jsp" %>	
+        <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main">
+        <form id="trainForm" class="form-horizontal">
+       	  <h3 class="sub-header" style="margin-top:0px;">请假列表</h3>
+       	  <div class="form-group">
+				<label for="name" class="col-sm-1 control-label">请假人</label>
+			    <div class="col-sm-2 inputout">
+			    	<input type="text" id="agent" class="form-control"   name="vacationVO.requestUserName" value="${vacationVO.requestUserName }" />
+			    </div>
+			</div>
+				<div class="form-group">
+				<label for="company" class="col-sm-1 control-label">公司部门</label>
+			    <div class="col-sm-2" id="company_div">
+			    	<select class="form-control" id="company" name="vacationVO.companyID" onchange="showDepartment(this, 0)">
+				      <option value="">请选择</option>
+				      <c:if test="${not empty companyVOs }">
+				      	<s:iterator id="company" value="#request.companyVOs" status="st">
+				      		<option value="<s:property value="#company.companyID" />" <s:if test="#request.vacationVO.companyID == #company.companyID ">selected="selected"</s:if>><s:property value="#company.companyName"/></option>
+				      	</s:iterator>
+				      </c:if>
+					</select>
+			    </div>
+			    <c:if test="${not empty departmentVOs}">
+			    <c:if test="${not empty selectedDepartmentIDs}">
+			    <s:set name="departmentClass" value="'col-sm-2'"></s:set>
+			    <s:set name="parent" value="0"></s:set>
+			    <s:iterator id="selectedDepartmentID" value="#request.selectedDepartmentIDs" status="st">
+			    	<s:set name="level" value="#st.index+1"></s:set>
+			    	<s:set name="selectDepartmentID" value="#selectedDepartmentID"></s:set>
+			    	<s:set name="departmentClass" value="#departmentClass+' department'+#level"></s:set>
+			    	<s:set name="hasNextLevel" value="'false'"></s:set>
+			    	<div class="<s:property value='#departmentClass'/>" id="department<s:property value='#level'/>_div" >
+			    		<select class="form-control" id="department<s:property value='#level'/>" onchange="showDepartment(this, <s:property value='#level'/>)">
+			    			<option value="">--<s:property value="#level"/>级部门--</option>
+			    			<s:iterator id="department" value="#request.departmentVOs" status="department_st">
+			    			<s:if test="#department.parentID == #parent">
+			    				<option value="<s:property value='#department.departmentID'/>" <s:if test="#department.departmentID == #selectedDepartmentID">selected="selected"</s:if>><s:property value="#department.departmentName"/></option>
+			    			</s:if>
+			    			<s:if test="#department.parentID == #selectedDepartmentID"><s:set name="hasNextLevel" value="'true'"></s:set></s:if>
+			    			</s:iterator>
+			    		</select>
+			    	</div>
+			    	<s:set name="parent" value="#selectedDepartmentID"></s:set>
+			    </s:iterator>
+			    <input type="hidden" id="departmentLevel" value="<s:property value='#level'/>"/>
+			    <s:if test="#hasNextLevel == 'true'">
+				    <s:set name="index" value="#level+1"></s:set>
+				    <div class="<s:property value="#departmentClass+' department'+#index"/>" id="department<s:property value='#index'/>_div" >
+			    		<select class="form-control" id="department<s:property value='#index'/>" onchange="showDepartment(this, <s:property value='#index'/>)">
+			    			<option value="">--<s:property value="#index"/>级部门--</option>
+			    			<s:iterator id="department" value="#request.departmentVOs" status="department_st">
+			    			<s:if test="#department.parentID == #selectDepartmentID">
+			    				<option value="<s:property value='#department.departmentID'/>"><s:property value="#department.departmentName"/></option>
+			    			</s:if>
+			    			</s:iterator>
+			    		</select>
+			    	</div>
+			    </s:if>
+			    </c:if>
+			    <c:if test="${empty selectedDepartmentIDs}">
+			    	<div class="col-sm-2 department1" id="department1_div" >
+			    		<select class="form-control" id="department1" onchange="showDepartment(this, 1)">
+			    			<option value="">--1级部门--</option>
+			    			<s:iterator id="department" value="#request.departmentVOs" status="department_st">
+			    			<s:if test="#department.level == 1">
+			    				<option value="<s:property value='#department.departmentID'/>"><s:property value="#department.departmentName"/></option>
+			    			</s:if>
+			    			</s:iterator>
+			    		</select>
+			    	</div>
+			    </c:if>
+			    </c:if>
+			</div>
+       	  <div class="form-group">
+				<label for="beginDate" class="col-sm-1 control-label">日期</label>
+			    <div class="col-sm-2">
+			    	<input type="text" class="form-control" id="beginDate" name="vacationVO.beginDate" value="${vacationVO.beginDate }"  onclick="WdatePicker({dateFmt:'yyyy-MM-dd HH:mm:ss'})" onBlur="calcTime()" placeholder="开始时间" />
+			    </div>
+			    <div class="col-sm-2">
+			    	<input type="text" class="form-control" id="endDate" name="vacationVO.endDate" value="${vacationVO.endDate }" onclick="WdatePicker({dateFmt:'yyyy-MM-dd HH:mm:ss'})" onBlur="calcTime()" placeholder="结束时间"/>
+			    </div>
+			</div>
+			<div class="col-sm-5">
+			</div>
+			<button type="button" id="submitButton" class="btn btn-primary" onclick="search()">查询</button>
+          </form>
+       	  	<div class="form-group">
+       	  		<a class="btn btn-primary" onclick="newVacation()" href="javascript:void(0)"><span class="glyphicon glyphicon-plus"></span> 新增</a>
+       	  	</div>
+       	  	<div class="table-responsive">
+       	  		<table class="table table-striped">
+       	  			<thead>
+       	  				<tr>
+       	  					<th>序号</th>       	  					
+       	  					<th>请假人/部门</th>
+       	  					<th>开始时间</th>
+       	  					<th>结束时间</th>
+       	  					<th>工作代理人</th>       	  					
+       	  					<th>请假类型</th>       	  					
+       	  					<th>事由</th>       	  					
+       	  					<th>操作</th>       	  					
+       	  				</tr>
+       	  				
+       	  			</thead>
+       	  			<tbody>
+       	  				<c:if test="${not empty vacations}">
+              			<c:set var="vacation_id" value="${(page-1)*limit }"/>
+              			<c:forEach items="${vacations}" var="vacation" varStatus="count">
+              				<tr>
+              					<td class="col-sm-1">${vacation_id+1}</td>
+              					<td class="col-sm-1">${vacation.requestUserName }</td>
+              					<td class="col-sm-1">${vacation.beginDate }</td>
+              					<td class="col-sm-1">${vacation.endDate}</td>
+              					<td class="col-sm-1">${vacation.agentName}</td>
+              					<td class="col-sm-1"><c:if test="${vacation.vacationType=='1'}">公假</c:if><c:if test="${vacation.vacationType=='2'}">事假</c:if><c:if test="${vacation.vacationType=='3'}">年休假</c:if></td>
+              					<td class="col-sm-1">${vacation.reason}</td>
+              					
+              					<td class="col-sm-2">
+									<a href="javascript:showMore('${vacation.vacationID}')">
+									<svg class="icon" aria-hidden="true" title="查看审批详情" data-toggle="tooltip">
+										<use xlink:href="#icon-Detailedinquiry"></use>
+									</svg>
+									</a>
+									&nbsp;
+									<c:if test="${fn:contains(vacation.requestUserName,'—')}">
+										<a href="javascript:showVacationUsers('${vacation.vacationID}')">
+										<svg class="icon" aria-hidden="true" title="查看请假人员" data-toggle="tooltip">
+											<use xlink:href="#icon-qingjia"></use>
+										</svg>
+										</a>
+										&nbsp;
+									</c:if>
+									<a onclick="goPath('attendance/loadVacation?vacationID=${vacation.vacationID}')" href="javascript:void(0)">
+									<svg class="icon" aria-hidden="true" title="修改" data-toggle="tooltip">
+										<use xlink:href="#icon-modify"></use>
+									</svg>
+									</a>
+									&nbsp;
+									<a  href="javascript:void(0)" onclick="deleteVacation(this)" data-vacationID="${vacation.vacationID}">
+									<svg class="icon" aria-hidden="true" title="删除" data-toggle="tooltip">
+										<use xlink:href="#icon-delete"></use>
+									</svg>
+									</a>
+								</td>
+              				</tr>
+              				
+              			<c:set var="vacation_id" value="${vacation_id+1}"/>
+              			</c:forEach>
+              			</c:if>
+              			
+       	  			</tbody>
+       	  		</table>
+       	  	</div>
+           <div class="dropdown">
+           	<label>每页显示数量：</label>
+           	<button class="btn btn-default dropdown-toggle" type="button" id="dropdownMenu1" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
+           		${limit}
+           		<span class="caret"></span>
+           	</button>
+           	<ul class="dropdown-menu" aria-labelledby="dropdownMenu1" style="left:104px;min-width:120px;">
+			    <li><a class="dropdown-item-20" href="#">20</a></li>
+			    <li><a class="dropdown-item-50" href="#">50</a></li>
+			    <li><a class="dropdown-item-100" href="#">100</a></li>
+		    </ul>
+           	<input type="hidden" id="page" value="${page}"/>
+           	<input type="hidden" id="limit" value="${limit}" />
+           	<input type="hidden" id="totalPage" value="${totalPage }" />
+          </div>
+          
+
+
+			<%@include file="/includes/pager.jsp" %>
+          
+        </div>
+      </div>
+    </div>
+    <div class="modal fade bs-example-modal-lg" id="cheakModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel">
+	  <div class="modal-dialog modal-md" role="document">
+	    <div class="modal-content">
+	      <div class="modal-header">
+	        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+	        <h4 class="modal-title" id="exampleModalLabel">审批详情</h4><div class="container-fluid1"></div>
+	      </div>
+	      <div class="modal-body">
+	      	<input type="hidden" id="groupDetailID" />
+	      	<p id="ntcContent"></p>
+	      </div>
+	      <div class="modal-footer">
+	      <button type="button" class="btn btn-primary" data-dismiss="modal">确定</button>
+	      </div>
+	    </div>
+	  </div>
+	</div>
+	<div id="selectObj" class="modal fade bs-example-modal-lg" id="cheakModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel">
+	  <div class="modal-dialog modal-md" role="document" style="width:31%">
+	    <div class="modal-content">
+	      <form action="attendance/newVacation" onsubmit="addLoading()" class="form-horizontal">
+	      <div class="modal-header">
+	        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+	        <h4 class="modal-title" id="exampleModalLabel">请假对象</h4><div class="container-fluid1"></div>
+	      </div>
+	      <div class="modal-body" style="height:100px">
+	      	<div class="form-group">
+	      		<label class="col-sm-3 control-label">请假对象<span style="color:red"> *</span></label>
+	      		<div class="col-sm-8">
+	      			<select class="form-control" name="objectType" required>
+	      				<option value="">请选择</option>
+	      				<option value="个人">个人</option>
+	      				<option value="部门">部门</option>
+	      			</select>
+	      		</div>
+	      	</div>
+	      </div>
+	      <div class="modal-footer">
+	      <button type="submit" class="btn btn-primary">确定</button>
+	      </div>
+	      </form>
+	    </div>
+	  </div>
+	</div>
+	<script src="/assets/js/underscore-min.js"></script>
+	
+    <script>
+     showMore=function (vacationId){
+    	 $.ajax({
+    		 url:'personal/getVacationHistoryDetail',
+    		 data:{vacationId:vacationId},
+    		 success:function(data){
+    			 var subjectList=Array.prototype.slice.call(data,1);
+    			 if(subjectList.length==0){
+    				 alert("暂无审批信息");
+    			 }else{
+    				 var resultHtml=_.reduce(subjectList,function (str,value){
+    					 return str+="【"+value.taskName+"】 审批人："+value.assigneeName+"</br>审批时间："+value.endTime+"</br></br>";
+    				 },"")
+    				$('#ntcContent').empty().html(resultHtml);
+			    	 $("#cheakModal").modal('show');
+    				 
+    			 }
+    		 }
+    	 });
+     }
+     function newVacation(){
+    	 $("#selectObj").modal("show");
+     }
+     function addLoading(){
+    	 $("#selectObj").modal("hide");
+    	 Load.Base.LoadingPic.FullScreenShow(null);
+     }
+    </script>
+  </body>
+</html>

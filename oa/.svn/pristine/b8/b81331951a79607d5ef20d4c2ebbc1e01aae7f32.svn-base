@@ -1,0 +1,110 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8"
+    pageEncoding="UTF-8"%>
+<%@ taglib prefix="s" uri="/struts-tags" %>
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %> 
+<%@  taglib  uri="http://java.sun.com/jsp/jstl/functions" prefix="fn"%>
+<!DOCTYPE html> 
+<html lang="zh-CN">
+
+<head>
+<meta http-equiv="expires" content="0">
+<meta http-equiv="pragma" content="no-cache">
+<meta http-equiv="cache-control" content="no-cache">
+<script type="text/javascript">
+	$(function() {
+		set_href();
+	});
+</script>
+<style type="text/css">
+	
+</style>
+</head>
+  <body>
+
+    <div class="container-fluid">
+      <div class="row">     	
+        <s:set name="panel" value="'myHistoryProcess'"></s:set>
+        <s:set name="selectedPanel" value="'ReimbursementList'"></s:set>    
+        <%@include file="/pages/administration/panel.jsp" %>		
+        <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main">
+       
+        <form id="queryReimbursementForm" class="form-horizontal" action="/administration/process/findUserReimbursementList" method="post">
+       	  <h3 class="sub-header" style="margin-top:0px;">报销列表</h3>
+       	  <div class="form-group" style="margin-top:10px">
+				<label for="beginDate" class="col-sm-1 control-label">报销单号</label>
+				<div class="col-sm-2">
+			    	<input type="text" class="form-control" id="No_code" name="code" value="${code}" placeholder="报销编号">
+			    </div>
+			    <label for="beginDate" class="col-sm-1 control-label">发起时间</label>
+			    <div class="col-sm-2">
+			    	<input type="text" class="form-control" id="beginDate" name="startTime" value="${startTime}" onclick="WdatePicker({maxDate:'%y-%M-%d'})" placeholder="开始时间">
+			    </div>
+			    <div class="col-sm-2">
+			    	<input type="text" class="form-control" id="endDate" name="endTime" value="${endTime }" onclick="WdatePicker({maxDate:'%y-%M-%d'})" placeholder="结束时间">
+			    </div>
+			    <div class="col-sm-1">
+			    <button type="submit" class="btn btn-primary">查询</button>
+			    </div>
+			</div>
+		 </form>
+			
+		  <h3 class="sub-header"></h3>
+       	  <div class="table-responsive">
+            <table class="table table-striped">
+              <thead>
+                <tr>
+                  <th>序号</th>
+                  <th>发起人</th>
+                  <th>节点处理人</th>
+                  <th>报销编号</th>
+                  <th>流程开始时间</th>
+                  <th>流程结束时间</th>
+                  <th>任务开始时间</th>   
+                  <th>任务结束时间</th>
+                  <th>操作</th>             
+                </tr>
+              </thead>
+              <tbody>
+              	<c:if test="${not empty reimbursementList}">
+              	<s:set name="reimbursement_id" value="(#request.page-1)*(#request.limit)"></s:set>
+              	<s:iterator id="reimbursementVO" value="#request.reimbursementList" status="count">
+              		<tr>
+              			<td class="col-sm-1"><s:property value="#reimbursement_id+1"/></td>
+              			<td class="col-sm-1"><s:property value="#reimbursementVO[8]"/></td>
+              			<td class="col-sm-1">${userName}</td>
+              			<td class="col-sm-1"><s:property value="#reimbursementVO[6]"/></td>
+              			<td class="col-sm-1"><s:date format="yyyy-MM-dd hh:mm" name="#reimbursementVO[2]"/></td>
+              			<td class="col-sm-1"><s:date format="yyyy-MM-dd hh:mm" name="#reimbursementVO[3]" /></td>              			
+              			<td class="col-sm-1"><s:date format="yyyy-MM-dd hh:mm" name="#reimbursementVO[4]"/></td>  
+              			<td class="col-sm-1"><s:date format="yyyy-MM-dd hh:mm" name="#reimbursementVO[5]"/></td>  
+              			<td class="col-sm-2"><a href="finance/reimbursement/getReimbursementDetail?type=1&processInstanceID=<s:property value='#reimbursementVO[0]'/>">查看报销单详情</a><br/><a href="finance/reimbursement/getReimbursementProcess?type=1&processInstanceID=<s:property value='#reimbursementVO[0]'/>">流程审批详情</a></td>           			
+              		</tr>
+              		<s:set name="reimbursement_id" value="#reimbursement_id+1"></s:set>
+              	</s:iterator>
+              	</c:if>
+              </tbody>
+            </table>
+          </div>
+          
+          <div class="dropdown">
+           	<label>每页显示数量：</label>
+           	<button class="btn btn-default dropdown-toggle" type="button" id="dropdownMenu1" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
+           		${limit}
+           		<span class="caret"></span>
+           	</button>
+           	<ul class="dropdown-menu" aria-labelledby="dropdownMenu1" style="left:104px;min-width:120px;">
+			    <li><a class="dropdown-item-20" href="#">20</a></li>
+			    <li><a class="dropdown-item-50" href="#">50</a></li>
+			    <li><a class="dropdown-item-100" href="#">100</a></li>
+		    </ul>
+           	<input type="hidden" id="page" value="${page}"/>
+           	<input type="hidden" id="limit" value="${limit}" />
+           	<input type="hidden" id="totalPage" value="${totalPage }" />
+          </div>
+          <%@include file="/includes/pager.jsp" %>
+          
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

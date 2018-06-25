@@ -1,0 +1,294 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8"
+    pageEncoding="UTF-8"%>
+<%@ taglib prefix="s" uri="/struts-tags" %>
+<!DOCTYPE html> 
+<html lang="zh-CN">
+
+<head>
+<script type="text/javascript">
+	$(function() {
+		set_href();
+		var departmentLevel = new Number($("#departmentLevel").val());
+		$("#department"+departmentLevel).attr("name", "staffQueryVO.departmentID");
+		
+		$('#editModal').on('show.bs.modal', function (event) {
+			  var button = $(event.relatedTarget); // Button that triggered the modal
+			  var userID = button.data('id');
+			  var modal = $(this);
+			  modal.find('#resignationUserID').val(userID);
+			  modal.find('#leaveDate').val("");
+		});
+	});
+	
+	function showDepartment(obj, level) {
+		level = level+1;
+		$(".department"+level).remove();
+		$(".department1 select").removeAttr("name");
+		if ($(obj).val() == '') {
+			if (level > 2) {
+				$("#department"+(level-2)).attr("name", "staffQueryVO.departmentID");
+			}
+			return;
+		}
+		
+		var parentID = 0;
+		if (level != 1) {
+			parentID = $(obj).val();
+			$(obj).attr("name", "staffQueryVO.departmentID");
+		}
+		$.ajax({
+			url:'HR/staff/findDepartmentsByCompanyIDParentID',
+			type:'post',
+			data:{companyID: $("#company").val(),
+				  parentID: parentID},
+			dataType:'json',
+			success:function (data){
+				if (data.errorMessage!=null && data.errorMessage.length!=0) {
+					if (level == 1) {
+						window.location.href = "HR/staff/error?panel=dangan&errorMessage="+encodeURI(encodeURI(data.errorMessage));
+					} else {
+						return;
+					}
+				}
+				
+				var divObj = $("#"+$(obj).attr('id')+"_div");
+				$(divObj).after("<div id=\"department"+level+"_div\" class=\""+$(divObj).attr('class')+" department"+level+"\">"
+							+"<select class=\"form-control\" id=\"department"+level+"\" onchange=\"showDepartment(this, "+level+")\" >"
+							+"<option value=\"\">--"+level+"级部门--</option></select>"
+							+"</div>");
+				$.each(data.departmentVOs, function(i, department) {
+					$("#department"+level).append("<option value='"+department.departmentID+"'>"+department.departmentName+"</option>");
+				});
+			}
+		});
+	}
+	
+	function doLeave() {
+		var userID = $("#resignationUserID").val();
+		var leaveDate = $("#leaveDate").val();
+		$.ajax({
+			url:'HR/staff/resignStaff',
+			type:'post',
+			data:{userID:userID,
+				  leaveDate:leaveDate},
+			dataType:'json',
+			success:function (data) {
+				if (data.errorMessage!=null && data.errorMessage.length!=0) {
+					window.location.href = "HR/staff/error?panel=dangan&errorMessage="+encodeURI(encodeURI(data.errorMessage));
+					return;
+				}
+				alert("操作成功！");
+			}
+		});
+	}
+	
+	function deleteStaff(obj) {
+		if (confirm("确认删除该员工？")) {
+			var userID = $(obj).attr("data-userID");
+			$.ajax({
+				url:'HR/staff/deleteStaff',
+				type:'post',
+				data:{userID:userID},
+				dataType:'json',
+				success:function (data) {
+					if (data.errorMessage!=null && data.errorMessage.length!=0) {
+						window.location.href = "HR/staff/error?panel=dangan&errorMessage="+encodeURI(encodeURI(data.errorMessage));
+						return;
+					}
+					if (confirm("删除成功！")) {
+						window.location.href = "HR/staff/findStaffList";
+					}
+				}
+			});
+		}
+		
+	}
+	
+	function search() {
+		var params = $("#queryStaffForm").serialize();
+		window.location.href = "HR/staff/findStaffListByQueryVO?" + encodeURI(encodeURI(decodeURIComponent(params,true)));
+	}
+	
+</script>
+<style type="text/css">
+	.col-sm-1 {
+		padding-right: 6px;
+		padding-left: 6px;
+	}
+	#tableTr td,#tableHeadLine th {
+		text-align:center;
+	}
+	table{width:100%;border:0px solid #999;}
+    table td{word-break: keep-all;white-space:nowrap;}
+    table th{word-break: keep-all;white-space:nowrap;}
+	
+</style>
+</head>
+  <body>
+
+    <div class="container-fluid">
+      <div class="row">
+      	<s:set name="panel" value="'dangan'"></s:set>
+        <%@include file="/pages/HR/panel.jsp" %>	
+        <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main">
+          <form id="queryStaffForm" class="form-horizontal">
+          	<h3 class="sub-header" style="margin-top:0px;">员工档案</h3>
+          	<div class="form-group">
+				<label for="staffName" class="col-sm-1 control-label">姓名</label>
+			    <div class="col-sm-2">
+			    	<input type="text" class="form-control" id="staffName" name="staffQueryVO.name" value="${staffQueryVO.name}" >
+			    </div>
+			    <label for="status" class="col-sm-1 control-label">在职状态</label>
+			    <div class="col-sm-2">
+			    	<select class="form-control" id="status" name="staffQueryVO.status">
+				      <option value="">请选择</option>
+					  <option value="1" <c:if test="${staffQueryVO.status == 1 }">selected="selected"</c:if>>试用</option>
+					  <option value="2" <c:if test="${staffQueryVO.status == 2 }">selected="selected"</c:if>>实习</option>
+					  <option value="3" <c:if test="${staffQueryVO.status == 3 }">selected="selected"</c:if>>正式</option>
+					</select>
+			    </div>
+			</div>
+			<div class="form-group">
+				<label for="company" class="col-sm-1 control-label">公司部门</label>
+			    <div class="col-sm-2" id="company_div">
+			    	<select class="form-control" id="company" name="staffQueryVO.companyID" onchange="showDepartment(this, 0)">
+				      <option value="">请选择</option>
+				      <c:if test="${not empty companyVOs }">
+				      	<s:iterator id="company" value="#request.companyVOs" status="st">
+				      		<option value="<s:property value="#company.companyID" />" <s:if test="#request.staffQueryVO.companyID == #company.companyID ">selected="selected"</s:if>><s:property value="#company.companyName"/></option>
+				      	</s:iterator>
+				      </c:if>
+					</select>
+			    </div>
+			    <c:if test="${not empty departmentVOs}">
+			    <c:if test="${not empty selectedDepartmentIDs}">
+			    <s:set name="departmentClass" value="'col-sm-2'"></s:set>
+			    <s:set name="parent" value="0"></s:set>
+			    <s:iterator id="selectedDepartmentID" value="#request.selectedDepartmentIDs" status="st">
+			    	<s:set name="level" value="#st.index+1"></s:set>
+			    	<s:set name="selectDepartmentID" value="#selectedDepartmentID"></s:set>
+			    	<s:set name="departmentClass" value="#departmentClass+' department'+#level"></s:set>
+			    	<s:set name="hasNextLevel" value="'false'"></s:set>
+			    	<div class="<s:property value='#departmentClass'/>" id="department<s:property value='#level'/>_div" >
+			    		<select class="form-control" id="department<s:property value='#level'/>" onchange="showDepartment(this, <s:property value='#level'/>)">
+			    			<option value="">--<s:property value="#level"/>级部门--</option>
+			    			<s:iterator id="department" value="#request.departmentVOs" status="department_st">
+			    			<s:if test="#department.parentID == #parent">
+			    				<option value="<s:property value='#department.departmentID'/>" <s:if test="#department.departmentID == #selectedDepartmentID">selected="selected"</s:if>><s:property value="#department.departmentName"/></option>
+			    			</s:if>
+			    			<s:if test="#department.parentID == #selectedDepartmentID"><s:set name="hasNextLevel" value="'true'"></s:set></s:if>
+			    			</s:iterator>
+			    		</select>
+			    	</div>
+			    	<s:set name="parent" value="#selectedDepartmentID"></s:set>
+			    </s:iterator>
+			    <input type="hidden" id="departmentLevel" value="<s:property value='#level'/>"/>
+			    <s:if test="#hasNextLevel == 'true'">
+				    <s:set name="index" value="#level+1"></s:set>
+				    <div class="<s:property value="#departmentClass+' department'+#index"/>" id="department<s:property value='#index'/>_div" >
+			    		<select class="form-control" id="department<s:property value='#index'/>" onchange="showDepartment(this, <s:property value='#index'/>)">
+			    			<option value="">--<s:property value="#index"/>级部门--</option>
+			    			<s:iterator id="department" value="#request.departmentVOs" status="department_st">
+			    			<s:if test="#department.parentID == #selectDepartmentID">
+			    				<option value="<s:property value='#department.departmentID'/>"><s:property value="#department.departmentName"/></option>
+			    			</s:if>
+			    			</s:iterator>
+			    		</select>
+			    	</div>
+			    </s:if>
+			    </c:if>
+			    <c:if test="${empty selectedDepartmentIDs}">
+			    	<div class="col-sm-2 department1" id="department1_div" >
+			    		<select class="form-control" id="department1" onchange="showDepartment(this, 1)">
+			    			<option value="">--1级部门--</option>
+			    			<s:iterator id="department" value="#request.departmentVOs" status="department_st">
+			    			<s:if test="#department.level == 1">
+			    				<option value="<s:property value='#department.departmentID'/>"><s:property value="#department.departmentName"/></option>
+			    			</s:if>
+			    			</s:iterator>
+			    		</select>
+			    	</div>
+			    </c:if>
+			    </c:if>
+			</div>
+			<div class="col-sm-5">
+			</div>
+			<button type="button" id="submitButton" class="btn btn-primary" onclick="search()">查询</button>
+          </form>
+          <h3 class="sub-header"></h3>
+          <div class="table-responsive">
+            <table class="table table-striped">
+              <thead>
+                <tr>
+                  <th>序号</th>
+                  <th>姓名</th>
+                  <th>性别</th>
+                  <th>联系电话</th>
+                  <th>入职日期</th>
+                  <th>操作</th>
+                </tr>
+              </thead>
+              <tbody>
+              	<c:if test="${not empty staffVOList}">
+              	<c:set var="staff_id" value="${(page-1)*limit}"></c:set>
+              	<c:forEach items="${staffVOList}" var="staffVO">
+              	   <tr>
+              			<td class="col-sm-1">${staff_id+1}</td>
+              			<td class="col-sm-2"><img style="height:20px;" alt="" src="assets/images/<c:if test="${staffVO.positionCategory==1}">computer.jpg</c:if><c:if test="${staffVO.positionCategory==2}">sewing.jpg</c:if>">&nbsp;${staffVO.lastName}</td>
+              			<td class="col-sm-2"><img style="height:20px;" alt="" src="assets/images/<c:if test="${staffVO.gender=='男'}">male.jpg</c:if><c:if test="${staffVO.gender=='女'}">female.jpg</c:if>"></td>              			
+              			<td class="col-sm-2">${staffVO.telephone}</td>
+              			<td class="col-sm-2">${staffVO.entryDate}</td>
+              			<td class="col-sm-3"><a href="HR/staff/showStaffDetail?userID=${staffVO.userID}">查看</a>|<a href="HR/staff/updateStaff?userID=${staffVO.userID }">修改</a>|<a href="javascript:void(0)" data-toggle="modal" data-target="#editModal" data-id="${staffVO.userID }">离职</a>|<a href="javascript:void(0)" onclick="deleteStaff(this)" data-userID="${staffVO.userID }">删除</a>|<a href="HR/staff/staffCard?staffID=${staffVO.staffID }">人物卡片</a>|<a href="HR/staff/showStaffCard?userID=${staffVO.userID}">名片</a></td>
+              		</tr>
+              		<c:set var="staff_id" value="${staff_id+1}"></c:set>
+              	</c:forEach>              	             	
+              	</c:if>
+              </tbody>
+            </table>
+          </div>
+          <div class="dropdown">
+           	<label>每页显示数量：</label>
+           	<button class="btn btn-default dropdown-toggle" type="button" id="dropdownMenu1" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
+           		${limit}
+           		<span class="caret"></span>
+           	</button>
+           	<ul class="dropdown-menu" aria-labelledby="dropdownMenu1" style="left:104px;min-width:120px;">
+			    <li><a class="dropdown-item-20" href="#">20</a></li>
+			    <li><a class="dropdown-item-50" href="#">50</a></li>
+			    <li><a class="dropdown-item-100" href="#">100</a></li>
+		    </ul>
+           	<input type="hidden" id="page" value="${page}"/>
+           	<input type="hidden" id="limit" value="${limit}" />
+           	<input type="hidden" id="totalPage" value="${totalPage }" />
+          </div>
+          <%@include file="/includes/pager.jsp" %>
+        </div>
+      </div>
+    </div>
+    
+    <div class="modal fade" id="editModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel">
+	  <div class="modal-dialog" role="document">
+	    <div class="modal-content">
+	      <div class="modal-header">
+	        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+	        <h4 class="modal-title" id="exampleModalLabel">请填写离职日期</h4>
+	      </div>
+	      <div class="modal-body">
+	        <form> 
+	          <input type="hidden" id="resignationUserID" />
+	          <div class="form-group">
+	            <label for="leaveDate" class="control-label">离职日期：</label>
+    			<input type="text" class="form-control" id="leaveDate" required="required" onclick="WdatePicker({dateFmt:'yyyy-MM-dd'})" style="width:40%;"/>
+	          </div>
+	        </form>
+	      </div> 
+	      <div class="modal-footer">
+	        <button type="button" class="btn btn-default" data-dismiss="modal">取消</button>
+	        <button type="button" class="btn btn-primary" data-dismiss="modal" onclick="doLeave()">提交</button>
+	      </div>
+	    </div>
+	  </div>
+	</div>
+    
+  </body>
+</html>

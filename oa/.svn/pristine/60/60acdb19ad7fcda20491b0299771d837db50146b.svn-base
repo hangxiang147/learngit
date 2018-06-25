@@ -1,0 +1,102 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8"
+    pageEncoding="UTF-8"%>
+<%@ taglib uri="/WEB-INF/authentication.tld" prefix="auth" %>
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+<%@ taglib prefix="s" uri="/struts-tags" %>
+
+<div class="col-sm-3 col-md-2 sidebar" <s:if test="#panel != 'asset'">style="display:none;"</s:if>>
+	<ul class="nav nav-sidebar">
+	  <li <c:if test="${selectedPanel == 'assetList' }">class="active"</c:if>><a href="asset/findAssetList">资产入库</a></li>
+	  <li <c:if test="${selectedPanel == 'assetUsageList' }">class="active"</c:if>><a href="asset/findAssetUsageList">领用&amp;退库</a></li>
+	</ul>
+</div> 
+<div class="col-sm-3 col-md-2 sidebar" <s:if test="#panel != 'myHistoryProcess'">style="display:none;"</s:if>>
+	<ul class="nav nav-sidebar">
+	  <li <c:if test="${selectedPanel == 'ReimbursementList' }">class="active"</c:if>><a href="administration/process/findUserReimbursementList">我的报销审批历史</a></li>
+	  <li <c:if test="${selectedPanel == 'AdvanceList' }">class="active"</c:if>><a href="administration/process/findUserAdvanceList">我的预付审批历史</a></li>
+	  
+	</ul>
+</div> 
+<div class="col-sm-3 col-md-2 sidebar" <s:if test="#panel != 'application'">style="display:none;"</s:if>>
+	<ul class="nav nav-sidebar">
+	  <li <c:if test="${selectedPanel == 'newEmail' }">class="active"</c:if>><a href="administration/process/showEmailDiagram">公司邮箱申请</a></li>
+	  <li <c:if test="${selectedPanel == 'newCard' }">class="active"</c:if>><a href="administration/process/showCardDiagram">工牌申领</a></li>
+	  
+	 <li <c:if test="${selectedPanel == 'newBussinessTripApply' }">class="active"</c:if>><a href="administration/process/showBussinessTripFlow">出差预约申请</a></li>
+    <li <c:if test="${selectedPanel == 'newChopBorrow' }">class="active"</c:if>><a href="personal/showChopBorrow">公章申请</a></li>
+    <li <c:if test="${selectedPanel == 'newCertificateBorrow' }">class="active"</c:if>><a href="personal/showCertificateBorrow">证件申请</a></li>
+    <li <c:if test="${selectedPanel == 'newContractBorrow' }">class="active"</c:if>><a href="personal/showContractBorrow">合同借阅申请</a></li>
+	  <li <c:if test="${selectedPanel == 'newIdBorrow' }">class="active"</c:if>><a href="personal/showIdBorrow">身份证借用</a></li>	 
+	 <%-- <li <c:if test="${selectedPanel == 'newContract' }">class="active"</c:if>><a href="personal/showContract">合同签署</a></li> --%>	
+	 <li <c:if test="${selectedPanel == 'newContractSign' }">class="active"</c:if>><a href="personal/showContractSign">合同签署</a></li>
+	 <li <c:if test="${selectedPanel == 'newChangeContract' }">class="active"</c:if>><a href="personal/showChangeContract">合同变更或解除</a></li>
+	 <%-- <li <c:if test="${selectedPanel == 'newBankAccount' }">class="active"</c:if>><a href="personal/showBankAccount">开设、变更及撤销银行账户</a></li> --%>
+	 	 <li <c:if test="${selectedPanel == 'newCarUseTripFlow' }">class="active"</c:if>><a href="administration/process/showCarUseTripFlow">车辆预约申请</a></li>	
+	 	  <li <c:if test="${selectedPanel == 'newVitae' }">class="active"</c:if>><a href="administration/process/showVitaeDiagram">招聘人员申请</a></li>
+	 	  <li <c:if test="${selectedPanel == 'newCommonSubject' }">class="active"</c:if>><a href="administration/process/showCommonSubject">通用流程</a></li>
+	  <li <c:if test="${selectedPanel == 'myProcessList' }">class="active"</c:if>><a href="administration/process/findMyProcessList?type=6">我的申请</a></li>
+	</ul>
+</div> 
+
+<div class="col-sm-3 col-md-2 sidebar" <s:if test="#panel != 'express'">style="display:none;"</s:if>>
+	<ul class="nav nav-sidebar">
+	  <li <c:if test="${selectedPanel == 'sendExpressList' }">class="active"</c:if>><a href="administration/express/findSendExpressList">快递账单</a></li>
+	  <auth:hasPermission name="signExpress">
+	  <li <c:if test="${selectedPanel == 'signExpressList' }">class="active"</c:if>><a href="administration/express/findSignExpressList">快递签收</a></li>
+	  </auth:hasPermission>
+	</ul>
+</div> 
+
+<div class="col-sm-3 col-md-2 sidebar" <s:if test="#panel != 'notice'">style="display:none;"</s:if>>
+	<ul class="nav nav-sidebar">
+	  <li <c:if test="${selectedPanel == 'messageList' }">class="active"</c:if>><a href="administration/notice/findMessageList">通知</a></li>
+	  <li <c:if test="${selectedPanel == 'noticeList' or param.selectedPanel == 'noticeList' }">class="active"</c:if>><a href="administration/notice/findNoticeList">公告</a></li>
+	  <li <c:if test="${selectedPanel == 'newsList' or param.selectedPanel == 'newsList' }">class="active"</c:if>><a href="administration/notice/findNewsList">大事记</a></li>
+	</ul>
+</div>
+
+<div class="col-sm-3 col-md-2 sidebar" <s:if test="#panel != 'meeting'">style="display:none;"</s:if>>
+	<ul class="nav nav-sidebar">
+	  <li <c:if test="${selectedPanel == 'launchMeeting' }">class="active"</c:if>><a href="administration/meeting/launchMeeting">发起会议</a></li>
+	  <li <c:if test="${selectedPanel == 'meetingList' }">class="active"</c:if>><a href="administration/meeting/findMeetingList">我的会议</a></li>
+	</ul>
+</div>
+
+<div class="col-sm-3 col-md-2 sidebar" <s:if test="#panel != 'audit'">style="display:none;"</s:if>>
+	<ul class="nav nav-sidebar">
+	  <li <c:if test="${selectedPanel == 'emailList' }">class="active"</c:if>><a href="administration/process/findEmailList">公司邮箱申请   <span class="badge" style="background-color:red;<c:if test='${emailCount == 0 }'>display:none;</c:if>">${emailCount }</span></a></li>
+	  <li <c:if test="${selectedPanel == 'cardList' }">class="active"</c:if>><a href="administration/process/findCardList">工牌申领   <span class="badge" style="background-color:red;<c:if test='${cardCount == 0 }'>display:none;</c:if>">${cardCount }</span></a></li>
+	 <li <c:if test="${selectedPanel == 'tripList' }">class="active"</c:if>><a href="administration/process/findTripList">出差预约申请   <span class="badge" style="background-color:red;<c:if test='${bussinessTripCount == 0 }'>display:none;</c:if>">${bussinessTripCount }</span></a></li>
+	</ul>
+</div> 
+<div class="col-sm-3 col-md-2 sidebar" <s:if test="#panel != 'bussinessTripList'">style="display:none;"</s:if>>
+	<ul class="nav nav-sidebar">
+	  <li <c:if test="${selectedPanel == 'bussinessTripList' }">class="active"</c:if>><a href="administration/process/bussinessTripList">出差查询 <span class="badge" style="background-color:red;<c:if test='${emailCount == 0 }'>display:none;</c:if>"></span></a></li>
+	</ul>
+</div> 
+<div class="col-sm-3 col-md-2 sidebar" <s:if test="#panel != 'carpoolList'">style="display:none;"</s:if>>
+	<ul class="nav nav-sidebar">
+	  <li <c:if test="${selectedPanel == 'carpoolList' }">class="active"</c:if>><a href="administration/carpool/carpoolList">拼车查询 </a></li>
+	</ul>
+</div> 
+<div class="col-sm-3 col-md-2 sidebar" <s:if test="#panel != 'chopList' && #panel!='chopUseLog'">style="display:none;"</s:if>>
+	<ul class="nav nav-sidebar">
+	  <li <c:if test="${selectedPanel == 'chopList' }">class="active"</c:if>><a href="administration/chop/toChopListPage">公章管理</a></li>
+	  <li <c:if test="${selectedPanel == 'chopUseLog' }">class="active"</c:if>><a href="administration/chop/toChopUseLogLst">使用登记</a></li>
+	</ul>
+</div> 
+<div class="col-sm-3 col-md-2 sidebar" <s:if test="#panel != 'certificateList' && #panel!='certificateBorrowLst'">style="display:none;"</s:if>>
+	<ul class="nav nav-sidebar">
+	  <li <c:if test="${selectedPanel == 'certificateList' }">class="active"</c:if>><a href="administration/certificate/showCertificates">证件管理</a></li>
+	</ul>
+</div>
+<div class="col-sm-3 col-md-2 sidebar" <s:if test="#panel!='contractManageLst'">style="display:none;"</s:if>>
+	<ul class="nav nav-sidebar">
+	  <li <c:if test="${selectedPanel == 'contractManageLst' }">class="active"</c:if>><a href="administration/contractManage/showContracts">合同管理</a></li>
+	</ul>
+</div>
+<div class="col-sm-3 col-md-2 sidebar" <s:if test="#panel != 'carUseList'">style="display:none;"</s:if>>
+	<ul class="nav nav-sidebar">
+	  <li <c:if test="${selectedPanel == 'carUseList' }">class="active"</c:if>><a href="administration/process/findCarUseList">车辆预约查询</a></li>
+	</ul>
+</div> 

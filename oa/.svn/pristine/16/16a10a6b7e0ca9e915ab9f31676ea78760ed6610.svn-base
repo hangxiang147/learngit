@@ -1,0 +1,92 @@
+package com.zhizaolian.staff.app;
+
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.activiti.engine.IdentityService;
+import org.activiti.engine.identity.Group;
+import org.activiti.engine.identity.User;
+import org.springframework.beans.factory.annotation.Autowired;
+
+import com.zhizaolian.staff.enums.APPResultEnum;
+import com.zhizaolian.staff.service.AttendanceService;
+import com.zhizaolian.staff.service.PermissionService;
+import com.zhizaolian.staff.service.StaffService;
+import com.zhizaolian.staff.utils.DateUtil;
+import com.zhizaolian.staff.vo.StaffVO;
+
+import lombok.Getter;
+import lombok.Setter;
+
+public class LoginAction extends BaseAction {
+	
+	private static final long serialVersionUID = 1L;
+
+	@Autowired
+	private StaffService staffService;
+	@Autowired
+	private PermissionService permissionService;
+	@Autowired
+	private IdentityService identityService;
+	@Getter
+	@Setter
+	private String password;
+	@Getter
+	@Setter
+	private String userName;
+	@Autowired
+	private AttendanceService attendanceService;
+	public void login() {
+		//result, message, userID, userName, List<String> permissionCodes;
+		Map<String, Object> result = new HashMap<String, Object>();
+		User user;
+		try {
+			user = staffService.loginValidate(userName, password);
+			StaffVO staff = staffService.getStaffByUserID(user.getId());
+			
+			if (user.getLastName().equals(staff.getLastName())) {
+				result.put("result", APPResultEnum.FIRST_LOGIN.getValue());  //首次登录
+				printByJson(result);
+				return;
+			}
+			
+			List<String> permissionCodes = permissionService.findPermissionsByUserID(user.getId());
+			List<Group> groups = identityService.createGroupQuery().groupMember(user.getId()).list();
+			String companyIDString = groups.get(0).getType().split("_")[0];
+			//CompanyIDEnum companyID = CompanyIDEnum.valueOf(Integer.parseInt(companyIDString));
+			//double dailyHours = positionService.getDailyHoursByCompanyID(companyID);
+		/*	String beginTime = positionService.getBeginTimeByCompanyID(companyID);
+			String endTime = positionService.getEndTimeByCompanyID(companyID);*/
+			String departmentId = groups.get(0).getType().split("_")[1];
+			double dailyHours = attendanceService.getDailyHoursByCompanyIDOrDepartmentId(companyIDString, departmentId, DateUtil.formateDate(new Date()));
+			String[] workTimeArray = attendanceService.getWorkRestTimeByCompanyIDOrDepartmentId(companyIDString, departmentId, DateUtil.formateDate(new Date()));
+			
+			//String workTimes = companyID.getTimeLimitByDate(null);
+			//String[] workTimeArray = workTimes.split(" ");
+			String beginTime = " " + workTimeArray[0] + ":00";;
+			String endTime = " " + workTimeArray[3] + ":00";;
+			result.put("result", APPResultEnum.SUCCESS.getValue());
+			result.put("message", APPResultEnum.SUCCESS.getName());
+			result.put("userID", user.getId());
+			result.put("staffNumber", user.getFirstName());
+			result.put("userName", staff.getLastName());
+			result.put("permissionCodes", permissionCodes);
+			result.put("dailyHours", dailyHours);
+			result.put("beginTime", beginTime);
+			result.put("endTime", endTime);
+			printByJson(result);
+		} catch (Exception e) {
+			result.put("result", APPResultEnum.ERROR.getValue());  //登录失败
+			result.put("message", e.getMessage());
+			printByJson(result);
+			StringWriter sw = new StringWriter(); 
+			e.printStackTrace(new PrintWriter(sw, true)); 
+			logger.error(sw.toString());
+		}
+		
+	}
+}

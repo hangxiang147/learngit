@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<decorators defaultdir="/includes">
+	<!-- Excludes will never be decorated by Sitemesh. -->
+	<excludes>
+		<pattern>/index*</pattern>
+		<pattern>/pages/index.jsp*</pattern>
+		<pattern>/toResetStep1.jsp*</pattern>
+		<pattern>/toResetStep2.jsp*</pattern>
+		<pattern>/toResetStep3.jsp*</pattern>
+		<pattern>/pages/error.jsp*</pattern>
+		<pattern>/pages/initUserAccount.jsp*</pattern>
+		<pattern>/zzlLogin.jsp*</pattern>
+		<pattern>/logout</pattern>
+		<pattern>/pages/HR/vitae/sign/chooseDetail*</pattern>
+		<pattern>/pages/HR/vitae/flow/toCollectRetrailMsg*</pattern>
+		<pattern>/pages/administration/entrust/chooseItemGroup.jsp*</pattern>
+		<pattern>/pages/404.jsp*</pattern>
+		<!-- <pattern>/ajax/*</pattern> <pattern>/assets/*</pattern> -->
+	</excludes>
+
+	<decorator name="base" page="base.jsp">
+		<pattern>/*</pattern>
+	</decorator>
+</decorators> 		

@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:tx="http://www.springframework.org/schema/tx" xmlns:task="http://www.springframework.org/schema/task" xmlns:jee="http://www.springframework.org/schema/jee"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
+       http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-3.0.xsd
+       http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-3.0.xsd
+       http://www.springframework.org/schema/jee http://www.springframework.org/schema/jee/spring-jee-3.0.xsd
+       http://www.springframework.org/schema/task http://www.springframework.org/schema/task/spring-task-3.0.xsd">
+    <!-- 引入基本配置文件 -->
+	<bean id="propertyConfigurer" class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
+		<property name="locations">
+			<list>
+				<value>/WEB-INF/init.properties</value>
+			</list>
+		</property>
+	</bean>
+    
+    <!-- 配置jndi数据源 -->
+	<jee:jndi-lookup id="dataSource" jndi-name="${jdbc.dbpool4jndi}" resource-ref="true"/>
+	<!-- session factory bean ERP-->
+	<bean id="sessionFactory" class="org.springframework.orm.hibernate4.LocalSessionFactoryBean">
+        <property name="dataSource" ref="dataSource" />
+          <!-- 扫描指定路劲下的实体进行映射 -->
+        <property name="packagesToScan">
+            <list>
+                <value>com.zhizaolian.staff.entity</value>
+            </list>
+        </property>
+		<property name="hibernateProperties">
+			<props>
+			    <prop key="hibernate.default_schema">oa_</prop>
+				<prop key="hibernate.show_sql">${hibernate.show_sql}</prop>
+                <prop key="hibernate.format_sql">${hibernate.format_sql}</prop>
+                <prop key="hibernate.hbm2ddl.auto">${hibernate.hbm2ddl.auto}</prop>
+                <prop key="hibernate.dialect">${hibernate.dialect}</prop>
+				<prop key="hibernate.connection.autocommit">${hibernate.connection.autocommit}</prop>
+				<prop key="hibernate.jdbc.batch_size">${hibernate.jdbc.batch_size}</prop>
+				<prop key="hibernate.autoReconnect">true</prop>
+				<!-- 开启二级缓存 -->
+                <!-- <prop key="cache.use_query_cache">${cache.use_query_cache}</prop>
+				<prop key="cache.use_second_level_cache">${cache.use_second_level_cache}</prop>
+				配置RegionFactory为Ehcache的RegionFactory
+                <prop key="cache.region.factory_class">${cache.region.factory_class}</prop> -->
+			</props>
+		</property>
+	</bean>
+
+	<!-- 配置数据源的bean -->
+	<!-- <bean id="dataSource" class="com.mchange.v2.c3p0.ComboPooledDataSource">
+		<property name="driverClass" value="com.mysql.jdbc.Driver" />
+		<property name="jdbcUrl" value="jdbc:mysql://localhost:3306/wms" />
+		<property name="user" value="root" />
+		<property name="password" value="320900524" />
+	</bean>
+	配置Hibernate SessionFactory
+	<bean id="sessionFactory"
+		class="org.springframework.orm.hibernate4.LocalSessionFactoryBean">
+		<property name="dataSource" ref="dataSource"></property>
+		<property name="packagesToScan">
+			<list>
+				<value>com.zhizaolian.staff.entity</value>
+			</list>
+		</property>
+		<property name="hibernateProperties">
+			<props>
+				<prop key="hibernate.hbm2ddl.auto">update</prop>
+				<prop key="hibernate.dialect">org.hibernate.dialect.MySQL5InnoDBDialect</prop>
+			</props>
+		</property>
+	</bean> -->
+	<!-- 配置事务管理 -->
+	<bean id="transactionManager"
+		class="org.springframework.orm.hibernate4.HibernateTransactionManager">
+		<property name="sessionFactory" ref="sessionFactory"></property>
+	</bean>
+	
+	
+	<!-- 事务拦截器 -->
+   	<bean id="transactionInterceptor" 
+        class="org.springframework.transaction.interceptor.TransactionInterceptor">
+        <property name="transactionManager" ref="transactionManager" />
+        <!-- 定义事务属性 -->
+        <property name="transactionAttributes">
+            <props>
+                <prop key="*">PROPAGATION_REQUIRED</prop>
+            </props>
+        </property>
+    </bean>
+    
+	<!-- 配置一个 BeanNameAutoProxyCreator, 实现根据bean名称自动创建事务代理 -->
+    <bean class="org.springframework.aop.framework.autoproxy.BeanNameAutoProxyCreator">  
+        <property name="beanNames">
+            <list>
+                <value>*Service</value>
+            </list>
+        </property>
+        <property name="interceptorNames">
+            <list>
+                <value>transactionInterceptor</value>
+            </list>  
+        </property>
+    </bean>
+    
+    <bean class="org.springframework.beans.factory.annotation.AutowiredAnnotationBeanPostProcessor"/>
+    
+    <!-- Activiti的bean -->
+    <!-- 流程引擎的配置bean -->
+    <bean id="processEngineConfiguration" class="org.activiti.spring.SpringProcessEngineConfiguration">
+        <property name="dataSource" ref="dataSource" />
+        <property name="databaseSchemaUpdate" value="true" />
+        <property name="transactionManager" ref="transactionManager" />
+        <property name="history" value="full" />
+    </bean>
+    <!-- 流程引擎的bean -->
+    <bean id="processEngine" class="org.activiti.spring.ProcessEngineFactoryBean">
+        <property name="processEngineConfiguration" ref="processEngineConfiguration" />
+    </bean>
+    <!-- 服务组件的bean -->
+    <bean id="repositoryService" factory-bean="processEngine" factory-method="getRepositoryService" />
+    <bean id="identityService" factory-bean="processEngine" factory-method="getIdentityService" />
+    <bean id="runtimeService" factory-bean="processEngine" factory-method="getRuntimeService" />
+    <bean id="taskService" factory-bean="processEngine" factory-method="getTaskService" />
+    <bean id="historyService" factory-bean="processEngine" factory-method="getHistoryService" />
+    <bean id="managementService" factory-bean="processEngine" factory-method="getManagementService" />
+    <!-- 定时任务 -->	   
+	<task:scheduled-tasks> 
+	      	<task:scheduled ref="synFormalStaffService" method="findFormalStaffs" cron="0 0 10,13,17 * * ?"/> <!--每天上午10点，下午1点，5点-->
+	        <task:scheduled ref="synoSoonOverdueVehicle" method="findSoonOverdueVehicle" cron="0 0 10,13,17 * * ?"/>
+	       	<task:scheduled ref="synCourseClassHour" method="sendNoticeToCourseJoiners" cron="0 0 8-22 * * ?"/>
+	        <task:scheduled ref="synCourseClassHour" method="autoCompleteTestAndComment" cron="0 0 0 * * ?"/>
+	</task:scheduled-tasks>
+</beans>

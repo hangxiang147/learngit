@@ -1,0 +1,856 @@
+package com.zhizaolian.staff.action;
+
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.URLDecoder;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.List;
+import java.util.UUID;
+
+import org.activiti.engine.IdentityService;
+import org.activiti.engine.TaskService;
+import org.activiti.engine.identity.Group;
+import org.activiti.engine.identity.User;
+import org.activiti.engine.task.Attachment;
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.springframework.beans.factory.annotation.Autowired;
+import com.zhizaolian.staff.entity.SalaryDetailEntity;
+import com.zhizaolian.staff.enums.CompanyIDEnum;
+import com.zhizaolian.staff.enums.Constants;
+import com.zhizaolian.staff.service.AttendanceService;
+import com.zhizaolian.staff.service.PositionService;
+import com.zhizaolian.staff.service.StaffService;
+import com.zhizaolian.staff.service.VacationService;
+import com.zhizaolian.staff.service.WorkOvertimeService;
+import com.zhizaolian.staff.utils.DateUtil;
+import com.zhizaolian.staff.utils.EmailSender;
+import com.zhizaolian.staff.utils.ListResult;
+import com.zhizaolian.staff.utils.ShortMsgSender;
+import com.zhizaolian.staff.vo.AttendanceVO;
+import com.zhizaolian.staff.vo.CompanyVO;
+import com.zhizaolian.staff.vo.DepartmentVO;
+import com.zhizaolian.staff.vo.SigninVO;
+import com.zhizaolian.staff.vo.StaffVO;
+import com.zhizaolian.staff.vo.VacationVO;
+import com.zhizaolian.staff.vo.WorkOvertimeVo;
+
+import lombok.Getter;
+import lombok.Setter;
+
+public class AttendanceAction extends BaseAction {
+	@Getter
+	private double dailyHours;
+	@Getter
+	private String beginTime;
+	@Getter
+	private String endTime;
+	@Autowired
+	private StaffService staffService;
+
+	@Getter
+	private String selectedPanel;
+	@Getter
+	private String errorMessage;
+	@Setter
+	@Getter
+	private Integer page = 1;
+	@Setter
+	@Getter
+	private Integer limit = 20;
+	@Getter
+	private Integer totalPage;
+	@Setter
+	private Integer result; // 任务处理结果
+	@Getter
+	@Setter
+	private Integer flag;
+	@Setter
+	private File uploadFile;
+	@Setter
+	@Getter
+	private AttendanceVO attendanceVO = new AttendanceVO();
+	@Setter
+	@Getter
+	private List<SigninVO> noSignStatistics;
+	@Setter
+	@Getter
+	private VacationVO vacationVO = new VacationVO();
+	@Setter
+	@Getter
+	private String searchDate;
+	@Setter
+	@Getter
+	private File[] attachment;
+	@Setter
+	@Getter
+	private String attachmentContentType;
+	@Setter
+	@Getter
+	private String[] attachmentFileName;
+	@Setter
+	@Getter
+	private ByteArrayInputStream excelFile;
+	@Setter
+	@Getter
+	private String excelFileName;
+
+	@Autowired
+	private IdentityService identityService;
+	@Autowired
+	private VacationService vacationService;
+	@Autowired
+	private PositionService positionService;
+	@Autowired
+	private AttendanceService attendanceService;
+	@Autowired
+	private WorkOvertimeService workOvertimeService;
+
+	private static final long serialVersionUID = 1L;
+
+	public String error() {
+		try {
+			errorMessage = URLDecoder.decode(errorMessage, "utf-8");
+		} catch (Exception e) {
+			errorMessage = e.getMessage();
+		}
+		return "error";
+	}
+
+	public String vacationStatistics() {
+		try {
+			Integer companyID = Integer.parseInt(request.getParameter("companyID"));
+			String userName = request.getParameter("userName");
+			List<CompanyVO> companyVOs = positionService.findAllCompanys();
+			List<VacationVO> vacationVOs = vacationService.findVacationsByCompanyAndDate(companyID, new Date());
+			ListResult<VacationVO> statistics = vacationService.findStatisticsPageListByCompanyAndMonth(companyID,
+					userName, new Date(), page, limit);
+			int count = statistics.getTotalCount();
+			totalPage = count % limit == 0 ? count / limit : count / limit + 1;
+			request.setAttribute("userName", userName);
+			request.setAttribute("companyVOs", companyVOs);
+			request.setAttribute("vacationVOs", vacationVOs);
+			request.setAttribute("statisticList", statistics.getList());
+			request.setAttribute("count", vacationVOs.size());
+		} catch (Exception e) {
+			errorMessage = "统计失败：" + e.getMessage();
+			return "error";
+		}
+
+		selectedPanel = "vacationStatistics";
+		return "vacationStatistics";
+	}
+
+	public String attendanceDetail() {
+		try {
+			if (!StringUtils.isBlank(attendanceVO.getName())) {
+				// 中文姓名解码
+				String trans = new String(attendanceVO.getName().getBytes("ISO-8859-1"), "UTF-8");
+				String name = URLDecoder.decode(trans, "UTF-8");
+				attendanceVO.setName(name);
+			}
+
+			ListResult<AttendanceVO> attendanceVOListResult = attendanceService
+					.findAttendancePageListByAttendanceVO(attendanceVO, page, limit);
+			request.setAttribute("attendanceVOList", attendanceVOListResult.getList());
+			int count = attendanceVOListResult.getTotalCount();
+			totalPage = count % limit == 0 ? count / limit : count / limit + 1;
+		} catch (Exception e) {
+			e.printStackTrace();
+			errorMessage = "考勤明细查询失败：" + e.getMessage();
+			return "error";
+		}
+		List<CompanyVO> companyVOs = positionService.findAllCompanys();
+		if (attendanceVO != null && attendanceVO.getCompanyID() != null) {
+			List<DepartmentVO> departmentVOs = positionService.findDepartmentsByCompanyID(attendanceVO.getCompanyID());
+			if (departmentVOs != null && attendanceVO.getDepartmentID() != null) {
+				List<Integer> selectedDepartmentIDs = new ArrayList<Integer>();
+				int selectedDepartmentID = attendanceVO.getDepartmentID();
+				while (selectedDepartmentID != 0) {
+					selectedDepartmentIDs.add(0, selectedDepartmentID);
+					for (DepartmentVO departmentVO : departmentVOs) {
+						if (departmentVO.getDepartmentID() == selectedDepartmentID) {
+							selectedDepartmentID = departmentVO.getParentID();
+						}
+					}
+				}
+				request.setAttribute("selectedDepartmentIDs", selectedDepartmentIDs);
+			}
+			request.setAttribute("departmentVOs", departmentVOs);
+		}
+		request.setAttribute("companyVOs", companyVOs);
+		selectedPanel = "attendanceDetail";
+		return "attendanceDetail";
+	}
+
+	public String exportAttendanceDetail() {
+		try {
+			if (!StringUtils.isBlank(attendanceVO.getName())) {
+				String trans = new String(attendanceVO.getName().getBytes("ISO-8859-1"), "UTF-8");
+				String name = URLDecoder.decode(trans, "UTF-8");
+				attendanceVO.setName(name);
+			}
+			XSSFWorkbook workbook = attendanceService.exportAttendancePageListByAttendanceVO(attendanceVO);
+			ByteArrayOutputStream output = new ByteArrayOutputStream();
+			workbook.write(output);
+			byte[] ba = output.toByteArray();
+			excelFile = new ByteArrayInputStream(ba);
+			excelFileName = new String("考勤明细.xlsx".getBytes(), "ISO8859-1");
+			output.flush();
+			output.close();
+		} catch (Exception e) {
+			e.printStackTrace();
+			errorMessage = "导出excel失败：" + e.getMessage();
+			return "error";
+		}
+		return "exportAttendanceDetail";
+	}
+
+	public String upload() {
+		List<CompanyVO> companyVOs = positionService.findAllCompanys();
+		request.setAttribute("companyVOs", companyVOs);
+		selectedPanel = "upload";
+		return "upload";
+	}
+
+	public String uploadDetail() {
+		int companyID = Integer.parseInt(request.getParameter("companyID"));
+		String fileName = CompanyIDEnum.valueOf(companyID).getName() + "_" + DateUtil.formateDate(new Date()) + "_"
+				+ UUID.randomUUID().toString();
+		File target = new File(Constants.ATTENDANCE_FILE_DIRECTORY, fileName);
+		StringBuffer index = new StringBuffer();
+		try {
+			FileUtils.copyFile(uploadFile, target);
+			attendanceService.parseExcel(fileName, companyID, index);
+		} catch (Exception e) {
+			e.printStackTrace();
+			errorMessage = "文件上传解析失败：" + "第"+index+"行格式不正确，请检查或者联系系统管理员";
+		}
+		return "uploadDetail";
+	}
+
+	
+	public String salaryContentUpload(){
+		
+		String fileName =  DateUtil.formateDate(new Date()) + "_"
+				+ UUID.randomUUID().toString();
+		File file=new File(Constants.SALARY_FILE_DIRECTORY);
+		if(!file.exists()){
+			file.mkdirs();
+		}
+		File target = new File(Constants.SALARY_FILE_DIRECTORY, fileName);
+		try {
+			FileUtils.copyFile(uploadFile, target);
+			attendanceService.parseSalary(fileName, Integer.parseInt(request.getParameter("year")),Integer.parseInt(request.getParameter("month")));
+		} catch (Exception e) {
+			errorMessage = e.getMessage();
+		}
+		return "uploadDetail";
+		
+	}
+	
+	public String salaryUpload(){
+		selectedPanel = "salaryUpload";
+		List<CompanyVO> companyVOs = positionService.findAllCompanys();
+		request.setAttribute("companyVOs", companyVOs);
+		//上个月
+		Calendar calendar=Calendar.getInstance();
+		calendar.setTime(new Date());
+		calendar.add(Calendar.MONTH, -1);
+		request.setAttribute("year", calendar.get(Calendar.YEAR));
+		request.setAttribute("month", calendar.get(Calendar.MONTH)+1);
+		return "salaryUpload";
+	}
+	
+	
+	
+	public String salarySend(){
+		selectedPanel = "salarySend";
+		Calendar calendar=Calendar.getInstance();
+		calendar.setTime(new Date());
+		calendar.add(Calendar.MONTH, -1);
+		request.setAttribute("year", calendar.get(Calendar.YEAR));
+		request.setAttribute("month", calendar.get(Calendar.MONTH)+1);
+		return "salarySend";
+	}
+	
+	/**
+	 * 查询当年当月份工资条录入情况
+	 * 返回 总共多少员工 共录入了多少条 有多少人已经录入了工资条信息
+	 * @return
+	 */
+	public void salaryDetail(){
+		String year=request.getParameter("year");
+		String month=request.getParameter("month");
+		if(month.startsWith("0")){
+			month=month.substring(1,2);
+		}
+		String sendType=request.getParameter("sendType");
+		if("1".equals(sendType)){
+			printByJson(staffService.getSalaryMobileDetail(year, month));
+		}else{
+			printByJson(staffService.getSalaryEmailDetail(year, month));
+		}
+	}
+	
+	public void toSendSalary(){
+		String year=request.getParameter("year");
+		String month=request.getParameter("month");
+		if(month.startsWith("0")){
+			month=month.substring(1,2);
+		}
+		String sendType=request.getParameter("sendType");
+		 if("1".equals(sendType)){
+			 sendMobile(year,month);
+		}else{
+			sendEmail(year,month);
+		}
+	}
+	
+	
+	private final static String[] TITLES={"姓名","基础工资","绩效奖金",
+			"绩效提成","补贴","满勤","应抵扣金额",
+			"其他扣除","迟到扣除","扣养老","扣医保"
+			,"扣失业","大病","扣住房公积金","扣个税","实发工资"
+	};
+	private void sendEmail(String year,String month){
+		List<Object> list=staffService.getUnPostEmails(year, month);
+		String title="工资条发放提醒";
+		EmailSender emailSender=EmailSender.getInstance();
+		for(Object obj:list){
+			Object[] objs=(Object[])obj;
+			if(StringUtils.isBlank(objs[1]+"")){
+				continue;
+			}else{
+				try{
+					String content="<h3>"+year+"年"+month+"月份工资条信息已发送至您的邮箱，请及时查看！如果疑问，请联系人事部胡经理或登录oa系统提出异议 ！</h3>";
+					String userName=staffService.getRealNameByUserId(objs[0]+"");
+					List<String> salaryDetail=staffService.getItemMonthSalaryResult(objs[0]+"",year,month);
+					StringBuilder sb = new StringBuilder("<table style=\"border:1px solid #000\">");
+					sb.append("<tr><td style=\"border:1px solid #000\">");
+					sb.append(StringUtils.join(TITLES,"</td><td style=\"border:1px solid #000\">"));
+					sb.append("</td></tr>");
+					sb.append("<tr>");
+					sb.append("<td style=\"border:1px solid #000\" >");
+					sb.append(userName);
+					sb.append("</td><td style=\"border:1px solid #000\">");
+					sb.append(StringUtils.join(salaryDetail,"</td ><td style=\"border:1px solid #000\">"));
+					sb.append("</td>");
+					sb.append("</tr>");
+					sb.append("</table>");
+					emailSender.sendEmail(objs[1]+"",title,content+sb.toString());
+					staffService.completeEmail(year, month, objs[0]+"");
+				}catch(Exception e){
+					e.printStackTrace();
+				}
+			}
+		}
+	}
+	
+	
+	private void sendMobile(String year,String month){
+		List<Object> list=staffService.getUnPostMobiles(year, month);
+		ShortMsgSender shortMsgSender=ShortMsgSender.getInstance();
+		for(Object obj:list){
+			Object[] objs=(Object[])obj;
+			if(StringUtils.isBlank(objs[1]+"")||objs[1]==null){
+				continue;
+			}else{
+				try{
+					String content="【智造链】 "+year+"年"+month+"月工资条已发送至oa系统，请及时登录确认。";
+					shortMsgSender.send(objs[1]+"",content);
+					staffService.completeMobile(year, month, objs[0]+"");
+				}catch(Exception e){
+					e.printStackTrace();
+				}
+			}
+		}
+	}
+	public String salaryShow(){
+		selectedPanel = "salaryShow";
+		String year=request.getParameter("year");
+		String month=request.getParameter("month");
+		String type=request.getParameter("type");
+		String name=request.getParameter("name");
+		
+		request.setAttribute("name", name);
+		request.setAttribute("type", type);
+		String emailSend= request.getParameter("emailSend");
+		String mobileSend=request.getParameter("mobileSend");
+		request.setAttribute("emailSend", emailSend);
+		request.setAttribute("mobileSend", mobileSend);
+		
+		Calendar calendar=Calendar.getInstance();
+		Integer yearInteger=null;
+		Integer monthInteger=null;
+		if(StringUtils.isBlank(year)){
+			yearInteger=calendar.get(Calendar.YEAR);
+		}else{
+			yearInteger=Integer.parseInt(year);
+		}
+		
+		if(StringUtils.isBlank(month)){
+			monthInteger=calendar.get(Calendar.MONTH)+1;
+		}else{
+			monthInteger=Integer.parseInt(month);
+		}
+		request.setAttribute("year", yearInteger);
+		request.setAttribute("month", monthInteger);
+		ListResult<SalaryDetailEntity> lists=attendanceService.getSalarysListByKey(name, emailSend,mobileSend,yearInteger, monthInteger,type, page, limit);
+		int total=lists.getTotalCount();
+		totalPage = total % limit == 0 ? total / limit : total / limit + 1;
+		if (totalPage == 0) {
+			totalPage = 1;
+		}
+		request.setAttribute("startIndex", (page-1)*limit);
+		request.setAttribute("lists", lists.getList());
+		return "salaryShow";
+	}
+	
+	public String vacationManagement() {
+		try {
+			ListResult<VacationVO> vacationVOPageList = attendanceService.findVacationPageListByVacationVO(vacationVO,
+					page, limit);
+			request.setAttribute("vacations", vacationVOPageList.getList());
+			int count = vacationVOPageList.getTotalCount();
+			totalPage = count % limit == 0 ? count / limit : count / limit + 1;
+			List<CompanyVO> companyVOs = positionService.findAllCompanys();
+			if (vacationVO != null && vacationVO.getCompanyID() != null) {
+				List<DepartmentVO> departmentVOs = positionService
+						.findDepartmentsByCompanyID(vacationVO.getCompanyID());
+				if (departmentVOs != null && vacationVO.getDepartmentID() != null) {
+					List<Integer> selectedDepartmentIDs = new ArrayList<Integer>();
+					int selectedDepartmentID = vacationVO.getDepartmentID();
+					while (selectedDepartmentID != 0) {
+						selectedDepartmentIDs.add(0, selectedDepartmentID);
+						for (DepartmentVO departmentVO : departmentVOs) {
+							if (departmentVO.getDepartmentID() == selectedDepartmentID) {
+								selectedDepartmentID = departmentVO.getParentID();
+							}
+						}
+					}
+					request.setAttribute("selectedDepartmentIDs", selectedDepartmentIDs);
+				}
+				request.setAttribute("departmentVOs", departmentVOs);
+			}
+			request.setAttribute("companyVOs", companyVOs);
+
+		} catch (Exception e) {
+			errorMessage = "查询请假列表失败：" + e.getMessage();
+			e.printStackTrace();
+			return "error";
+		}
+		selectedPanel = "vacationManagement";
+		return "vacationManagement";
+	}
+	
+	public String deleteVacation() {
+		try {
+			int vacationID = Integer.parseInt(request.getParameter("vacationID"));
+			VacationVO vacationVO = vacationService.findVacationByVacationID(vacationID);
+			vacationService.deleteVacationByVacationID(vacationID);
+			// 根据请假记录检查相关考勤统计数据
+			attendanceService.checkAttendanceDetailsByVacationVO(vacationVO);
+
+		} catch (Exception e) {
+			errorMessage = "删除失败：" + e.getMessage();
+
+		}
+
+		return "deleteVacation";
+
+	}
+
+	public String loadVacation() {
+
+		int vacationID = Integer.parseInt(request.getParameter("vacationID"));
+
+		try {
+			VacationVO vacationVO = vacationService.findVacationByVacationID(vacationID);
+			request.setAttribute("vacation", vacationVO);
+			List<Group> groups = identityService.createGroupQuery().groupMember(vacationVO.getRequestUserID()).list();
+			String companyIDString = groups.get(0).getType().split("_")[0];
+			CompanyIDEnum companyID = CompanyIDEnum.valueOf(Integer.parseInt(companyIDString));
+			dailyHours = positionService.getDailyHoursByCompanyID(companyID);
+/*			beginTime = positionService.getBeginTimeByCompanyID(companyID);
+			endTime = positionService.getEndTimeByCompanyID(companyID);*/
+			String workTimes = companyID.getTimeLimitByDate(null);
+			String[] workTimeArray = workTimes.split(" ");
+			beginTime = " " + workTimeArray[0] + ":00";
+			endTime = " " + workTimeArray[3] + ":00";
+			String attachmentImageStr = vacationVO.getAttachmentImage();
+			if(StringUtils.isNotBlank(attachmentImageStr)){
+				String[] attachmentImage = attachmentImageStr.split("#&&#");
+				request.setAttribute("attachmentImage", attachmentImage);
+			}
+		} catch (Exception e) {
+			errorMessage = "获取员工所在分公司作息时间失败！";
+			e.printStackTrace();
+			return "error";
+		}
+		User user = (User) request.getSession().getAttribute("user");
+		if (user == null) {
+			errorMessage = "您尚未登录，请先登录！";
+			return "error";
+		}
+
+		StaffVO staff = staffService.getStaffByUserID(user.getId());
+		request.setAttribute("userName", staff.getLastName());
+		selectedPanel = "vacationManagement";
+		return "updateVacation";
+	}
+	@Autowired
+	private TaskService taskService;
+	public String updateVacation() {
+		InputStream in = null;
+		OutputStream out = null;
+		try {
+			VacationVO vacation = vacationService.findVacationByVacationID(vacationVO.getVacationID());
+			int index = 0;
+			String fileNames = "";
+			//判断是否是流程
+			String processInstanceId = vacationService.getProcessInstanceId(vacationVO.getVacationID());
+			if(null != attachment){
+				//判断是否是流程
+				if(StringUtils.isNotBlank(processInstanceId)){
+					List<Attachment> attas = taskService
+							.getProcessInstanceAttachments(processInstanceId);
+					//删除附件，以便覆盖
+					for(Attachment atta: attas){
+						taskService.deleteAttachment(atta.getId());
+					}
+				}
+				for(File file: attachment){
+					byte[] buffer = new byte[10 * 1024 * 1024];
+					int length = 0;
+					String attachmentFileName = UUID.randomUUID().toString().replaceAll("-", "")
+							+ this.attachmentFileName[index].substring(this.attachmentFileName[index].indexOf("."));
+					if(index==0){
+						fileNames += attachmentFileName;
+					}else{
+						fileNames += "#&&#"+attachmentFileName;
+					}
+					in = new FileInputStream(file);
+					File f = new File(Constants.VACATION_FILE_DIRECTORY);
+					if (!f.exists()) {
+						f.mkdirs();
+					}
+					out = new FileOutputStream(new File(Constants.VACATION_FILE_DIRECTORY, attachmentFileName));
+
+					while ((length = in.read(buffer, 0, buffer.length)) != -1) {
+						out.write(buffer, 0, length);
+					}
+					index++;
+					//判断是否是流程
+					if(StringUtils.isNotBlank(processInstanceId)){
+						InputStream is = new FileInputStream(file);
+						taskService.createAttachment("picture", "", processInstanceId, "vacation picture", "WeChat screenshots", is);
+					}
+				}
+			}
+			if(StringUtils.isNotBlank(fileNames)){
+				vacationVO.setAttachmentImage(fileNames);
+			}
+			vacationService.updateVacation(vacationVO);
+			// 根据请假记录检查相关考勤统计数据
+			attendanceService.checkAttendanceDetailsByVacationVO(vacation);
+			attendanceService.checkAttendanceDetailsByVacationVO(vacationVO);
+		} catch (Exception e) {
+			errorMessage = "修改请假失败：" + e.getMessage();
+			return "error";
+		} finally {
+			if (in != null)
+				try {
+					in.close();
+				} catch (IOException e) {
+				}
+			if (out != null)
+				try {
+					out.close();
+				} catch (IOException e) {
+				}
+		}
+
+		return "vacationList";
+	}
+
+	public String newVacation() {
+		User user = (User) request.getSession().getAttribute("user");
+		if (user == null) {
+			errorMessage = "您尚未登录，请先登录！";
+			return "error";
+		}
+
+		try {
+			List<Group> groups = identityService.createGroupQuery().groupMember(user.getId()).list();
+			String companyIDString = groups.get(0).getType().split("_")[0];
+			CompanyIDEnum companyID = CompanyIDEnum.valueOf(Integer.parseInt(companyIDString));
+			dailyHours = positionService.getDailyHoursByCompanyID(companyID);
+		/*	beginTime = positionService.getBeginTimeByCompanyID(companyID);
+			endTime = positionService.getEndTimeByCompanyID(companyID);*/
+			String workTimes = companyID.getTimeLimitByDate(null);
+			String[] workTimeArray = workTimes.split(" ");
+			beginTime = " " + workTimeArray[0] + ":00";
+			endTime = " " + workTimeArray[3] + ":00";
+		} catch (Exception e) {
+			errorMessage = "获取员工所在分公司作息时间失败！";
+			return "error";
+		}
+
+		StaffVO staff = staffService.getStaffByUserID(user.getId());
+		request.setAttribute("userName", staff.getLastName());
+		selectedPanel = "vacationManagement";
+		return "newVacation";
+	}
+
+	public String saveVacation() {
+		InputStream in = null;
+		OutputStream out = null;
+
+		try {
+			int index = 0;
+			String fileNames = "";
+			if(null != attachment){
+				for(File file: attachment){
+					byte[] buffer = new byte[10 * 1024 * 1024];
+					int length = 0;
+					String attachmentFileName = UUID.randomUUID().toString().replaceAll("-", "") + this.attachmentFileName[index];
+					if(index==0){
+						fileNames += attachmentFileName;
+					}else{
+						fileNames += "#&&#"+attachmentFileName;
+					}
+					in = new FileInputStream(file);
+					File f = new File(Constants.VACATION_FILE_DIRECTORY);
+					if (!f.exists()) {
+						f.mkdirs();
+					}
+					out = new FileOutputStream(new File(Constants.VACATION_FILE_DIRECTORY, attachmentFileName));
+
+					while ((length = in.read(buffer, 0, buffer.length)) != -1) {
+						out.write(buffer, 0, length);
+					}
+					index++;
+				}
+			}
+			if(StringUtils.isNotBlank(fileNames)){
+				vacationVO.setAttachmentImage(fileNames);
+			}
+			vacationService.saveVacation(vacationVO);
+			// 根据请假记录检查相关考勤统计数据
+			attendanceService.checkAttendanceDetailsByVacationVO(vacationVO);
+		} catch (Exception e) {
+			errorMessage = "新增请假失败：" + e.getMessage();
+			return "error";
+		} finally {
+			if (in != null)
+				try {
+					in.close();
+				} catch (IOException e) {
+				}
+			if (out != null)
+				try {
+					out.close();
+				} catch (IOException e) {
+				}
+		}
+
+		return "vacationList";
+	}
+
+	public String signinStatistics() {
+		try {
+
+			Integer companyID = Integer.parseInt(request.getParameter("companyID"));
+			List<SigninVO> signinVOs = attendanceService.findSigninsByDateAndCompanyID(companyID, searchDate);
+			List<CompanyVO> companyVOs = positionService.findAllCompanys();
+			request.setAttribute("signinVOs", signinVOs);
+			request.setAttribute("count", signinVOs.size());
+			request.setAttribute("companyVOs", companyVOs);
+		} catch (Exception e) {
+			errorMessage = "统计签到情况失败：" + e.getMessage();
+			e.printStackTrace();
+			return "error";
+		}
+		selectedPanel = "signinStatistics";
+		return "signinStatistics";
+	}
+
+	public String findSignByMonth() {
+		try {
+			Integer companyID = Integer.parseInt(request.getParameter("companyID"));
+			String searchMonth = request.getParameter("searchMonth");
+			noSignStatistics = attendanceService.findSignByMonthAndCompanyID(companyID,
+					DateUtil.getSimpleDate(searchMonth + "-01"));
+		} catch (Exception e) {
+			e.printStackTrace();
+			errorMessage = "查询失败：" + e.getMessage();
+		}
+		return "findSignByMonth";
+	}
+
+	public String sendCompanyAttendanceStatistics() {
+		try {
+			List<CompanyVO> companyVOs = positionService.findAllCompanys();
+			request.setAttribute("companyVOs", companyVOs);
+		} catch (Exception e) {
+			errorMessage = "查询未汇报失败：" + e.getMessage();
+			e.printStackTrace();
+			return "error";
+
+		}
+		selectedPanel = "attendanceStatistics";
+		return "sendCompanyAttendanceStatistics";
+	}
+
+	public String findAttendanceStatisticsList() {
+		try {
+			List<CompanyVO> companyVOs = positionService.findAllCompanys();
+
+			if (attendanceVO != null && attendanceVO.getCompanyID() != null) {
+				List<DepartmentVO> departmentVOs = positionService
+						.findDepartmentsByCompanyID(attendanceVO.getCompanyID());
+				if (departmentVOs != null && attendanceVO.getDepartmentID() != null) {
+					List<Integer> selectedDepartmentIDs = new ArrayList<Integer>();
+					int selectedDepartmentID = attendanceVO.getDepartmentID();
+					while (selectedDepartmentID != 0) {
+						selectedDepartmentIDs.add(0, selectedDepartmentID);
+						for (DepartmentVO departmentVO : departmentVOs) {
+							if (departmentVO.getDepartmentID() == selectedDepartmentID) {
+								selectedDepartmentID = departmentVO.getParentID();
+							}
+						}
+					}
+					request.setAttribute("selectedDepartmentIDs", selectedDepartmentIDs);
+				}
+				request.setAttribute("departmentVOs", departmentVOs);
+			}
+			request.setAttribute("companyVOs", companyVOs);
+			String name = attendanceVO.getName();
+			if (name != null) {
+				String trans = new String(name.getBytes("ISO-8859-1"), "UTF-8");
+				name = URLDecoder.decode(trans, "UTF-8");
+				attendanceVO.setName(name);
+			}
+			ListResult<AttendanceVO> attendanceVOs = attendanceService.findAttendanceStatistics(attendanceVO, page,
+					limit);
+			int totalCount = attendanceVOs.getTotalCount();
+			totalPage = totalCount % limit == 0 ? totalCount / limit : totalCount / limit + 1;
+			if (totalPage == 0) {
+				totalPage = 1;
+			}
+			request.setAttribute("attendanceVOs", attendanceVOs.getList());
+		} catch (Exception e) {
+			errorMessage = "查询失败：" + e.getMessage();
+			e.printStackTrace();
+			return "error";
+
+		}
+		selectedPanel = "attendanceStatistics";
+		return "findAttendanceStatistics";
+	}
+
+	public String exportAttendanceStatisticsMsg() {
+		try {
+			attendanceVO.setName(URLDecoder.decode(attendanceVO.getName(),"utf-8"));
+			XSSFWorkbook workbook = attendanceService.exportAttendanceMsg(attendanceVO);
+			ByteArrayOutputStream output = new ByteArrayOutputStream();
+			workbook.write(output);
+			byte[] ba = output.toByteArray();
+			excelFile = new ByteArrayInputStream(ba);
+			excelFileName = new String("考勤统计明细.xlsx".getBytes(), "ISO8859-1");
+			output.flush();
+			output.close();
+		} catch (Exception e) {
+			e.printStackTrace();
+			errorMessage = "导出excel失败：" + e.getMessage();
+			return "error";
+		}
+		return "exportAttendanceStatisticsMsg";
+	}
+	@Getter
+	private InputStream inputStream;
+	public String showImage(){
+		String vacationImage = request.getParameter("vacationImage");
+		try {
+			inputStream = new FileInputStream(new File(Constants.VACATION_FILE_DIRECTORY, vacationImage)) ;
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		}
+		return "showImage";
+	}
+	@Setter
+	@Getter
+	private String userId;
+	@Setter
+	@Getter
+	private String userName;
+	@Setter
+	@Getter
+	private String companyId;
+	@Setter
+	@Getter
+	private String departmentId;
+	@Setter
+	@Getter
+	private String beginDate;
+	@Setter
+	@Getter
+	private String endDate;
+	
+	public String workOvertimeList(){
+		try {
+			//查询条件
+			String[] conditions = {userId, companyId, departmentId, beginDate, endDate};
+			ListResult<WorkOvertimeVo> workOvertimeListResult = workOvertimeService.findWorkOvertimeListByCondition(conditions,
+					page, limit);
+			request.setAttribute("workOvertimeVos", workOvertimeListResult.getList());
+			int count = workOvertimeListResult.getTotalCount();
+			totalPage = count % limit == 0 ? count / limit : count / limit + 1;
+			List<CompanyVO> companyVOs = positionService.findAllCompanys();
+			if (StringUtils.isNotBlank(companyId)) {
+				List<DepartmentVO> departmentVOs = positionService
+						.findDepartmentsByCompanyID(Integer.parseInt(companyId));
+				if (departmentVOs != null && StringUtils.isNotBlank(departmentId)) {
+					List<Integer> selectedDepartmentIDs = new ArrayList<Integer>();
+					int _departmentId = Integer.parseInt(departmentId);
+					while (_departmentId != 0) {
+						selectedDepartmentIDs.add(0, _departmentId);
+						for (DepartmentVO departmentVO : departmentVOs) {
+							if (departmentVO.getDepartmentID() == _departmentId) {
+								departmentId = departmentVO.getParentID()+"";
+								_departmentId = Integer.parseInt(departmentId);
+							}
+						}
+					}
+					request.setAttribute("selectedDepartmentIDs", selectedDepartmentIDs);
+				}
+				request.setAttribute("departmentVOs", departmentVOs);
+			}
+			request.setAttribute("companyVOs", companyVOs);
+			
+			request.setAttribute("userId", userId);
+			request.setAttribute("userName", userName);
+			request.setAttribute("companyId", companyId);
+			request.setAttribute("departmentId", departmentId);
+			request.setAttribute("beginDate", beginDate);
+			request.setAttribute("endDate", endDate);
+		} catch (Exception e) {
+			errorMessage = "查询加班列表失败：" + e.toString();
+			e.printStackTrace();
+			return "error";
+		}
+		selectedPanel = "workOvertimeList";
+		return "workOvertimeList";
+	}
+}

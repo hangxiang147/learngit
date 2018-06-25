@@ -1,0 +1,19 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8"
+    pageEncoding="UTF-8"%>
+<%@ taglib uri="/WEB-INF/authentication.tld" prefix="auth" %>
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+<%@ taglib prefix="s" uri="/struts-tags" %>
+
+<div class="col-sm-3 col-md-2 sidebar">
+	<ul class="nav nav-sidebar">
+	  <auth:hasPermission name="softProject_admin">
+	  <li <c:if test="${selectedPanel == 'softPersonTypeList' }">class="active"</c:if>><a href="/performance/soft/softPersonTypeList">人员类型维护</a></li>
+	  </auth:hasPermission>
+	  <li <c:if test="${selectedPanel == 'showProject' }">class="active"</c:if>><a href="/performance/soft/showProject">项目管理</a></li>
+	  <li <c:if test="${selectedPanel == 'showPreparedRequirement' }">class="active"</c:if>><a href="/performance/soft/showPreparedRequirement">录入需求</a></li>
+	  <li <c:if test="${selectedPanel == 'divideRequire' }">class="active"</c:if>><a href="/performance/soft/divideRequireManage">任务分解</a></li>
+	  <li <c:if test="${selectedPanel == 'showRequirement' }">class="active"</c:if>><a href="/performance/soft/showRequirement">版本管理</a></li>
+	  <li <c:if test="${selectedPanel == 'showTask' }">class="active"</c:if>><a href="/performance/soft/showAllTask">查看所有任务</a></li>
+	</ul>
+</div> 
+

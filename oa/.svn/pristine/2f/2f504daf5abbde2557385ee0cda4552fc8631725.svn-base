@@ -1,0 +1,207 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8"
+    pageEncoding="UTF-8"%>
+<%@ taglib prefix="s" uri="/struts-tags" %>
+<!DOCTYPE html> 
+<html lang="zh-CN">
+
+<head>
+<style type="text/css">
+	.icon {
+	   width: 1.5em; height: 1.5em;
+	   vertical-align: -0.15em;
+	   fill: currentColor;
+	   overflow: hidden;
+	}
+	a:hover, a:focus{text-decoration:none}
+</style>
+</head>
+  <body>
+
+    <div class="container-fluid">
+      <div class="row">
+      	<s:set name="panel" value="'position'"></s:set>
+        <%@include file="/pages/performance/soft/manage/panel.jsp" %>	
+        <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main">
+          <h3 class="sub-header" style="margin-top:0px;">问题单列表</h3>
+          	<br>
+			<form class="form-horizontal" action="/performance/soft/problemOrderList">
+				<div class="form-group">
+				<label class="col-sm-1 control-label">项目</label>
+				<div class="col-sm-2">
+					<select class="form-control" name="projectId">
+						<option <c:if test="${projectId==''}">selected="selected"</c:if> value="">全部</option>
+						<c:forEach items="${projects}" var="project">
+     					  	<option <c:if test="${projectId==project.id}">selected="selected"</c:if> value="${project.id}">${project.name}</option>
+     					 	</c:forEach>
+					</select>
+				</div>
+				<label class="col-sm-1 control-label">状态</label>
+				<div class="col-sm-2">
+					<select class="form-control" name="status">
+						<option <c:if test="${status==''}">selected="selected"</c:if> value="">全部</option>
+						<option <c:if test="${status=='1'}">selected="selected"</c:if> value="1">已解决</option>
+						<option <c:if test="${status=='0'}">selected="selected"</c:if> value="0">处理中</option>
+					</select>
+				</div>
+				<label class="col-sm-1 control-label">问题名称</label>
+				<div class="col-sm-2">
+					<input class="form-control" name="problemOrderName" autoComplete="off" value="${problemOrderName}">
+				</div>
+				<button type="submit" class="btn btn-primary" style="margin-left:5%">查询</button>
+				</div>
+			</form>
+		  <a class="btn btn-primary" onclick="newProblemOrder()"><span class="glyphicon glyphicon-plus"></span>问题单</a>
+          <h2 class="sub-header"></h2> 
+          <div class="table-responsive">
+            <table class="table table-striped">
+              <thead>
+                <tr>
+                  <th style="width:5%">序号</th>
+                  <th style="width:10%">项目</th>
+                  <th style="width:10%">版本</th>
+                  <th style="width:10%">模块</th>
+                  <th style="width:20%">问题名称</th>
+                  <th style="width:10%">状态</th>
+                  <th style="width:10%">创建人</th>
+                  <th style="width:15%">创建时间</th>
+                  <th style="width:10%">操作</th>
+                </tr>
+              </thead>
+              <tbody>
+              	<c:forEach items="${problemOrders}" var="problemOrder" varStatus="status">
+              		<tr>
+              		<td>${(page-1)*limt+status.index+1}</td>
+              		<td>${problemOrder[0]}</td>
+              		<td>${problemOrder[1]}</td>
+              		<td>${problemOrder[2]}</td>
+              		<td>${problemOrder[3]}</td>
+              		<td>${problemOrder[8]==null?'处理中':'已解决'}</td>
+              		<td>${problemOrder[4]}</td>
+              		<td>${problemOrder[5]}</td>
+              		<td>
+              			<a href="javascript:location.href='/performance/soft/showProblemOrderDetail?problemOrderId=${problemOrder[6]}&instanceId=${problemOrder[7]}'">
+	              			<svg class="icon" aria-hidden="true" title="查看详情" data-toggle="tooltip">
+             					<use xlink:href="#icon-Detailedinquiry"></use>
+             				</svg>
+	              		</a>
+              		</td>
+              		</tr>
+              	</c:forEach>
+              </tbody>
+            </table>
+          </div>
+           <div class="dropdown" style="margin-top:25px;">
+		           	<label>每页显示数量：</label>
+		           	<button class="btn btn-default dropdown-toggle" type="button" id="dropdownMenu1" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
+		           		${limit}
+		           		<span class="caret"></span>
+		           	</button>
+		           	<ul class="dropdown-menu" aria-labelledby="dropdownMenu1" style="left:104px;min-width:120px;">
+					    <li><a class="dropdown-item-20" href="#">20</a></li>
+					    <li><a class="dropdown-item-50" href="#">50</a></li>
+					    <li><a class="dropdown-item-100" href="#">100</a></li>
+				    </ul>
+		           	<input type="hidden" id="page" value="${page}"/>
+		           	<input type="hidden" id="limit" value="${limit}" />
+		           	<input type="hidden" id="totalPage" value="${totalPage }" />
+		        </div>
+			<%@include file="/includes/pager.jsp" %>
+        </div>
+      </div>
+    </div>
+    <div id="addProblemOrder" class="modal fade" tabindex="-1" role="dialog"
+	aria-labelledby="myModalLabel" aria-hidden="true">
+	<div class="modal-dialog">
+		<form class="form-horizontal" action="performance/soft/startProblemOrder" enctype="multipart/form-data" method="post">
+		<div class="modal-content">
+			<div class="modal-header">
+				<button type="button" class="close" data-dismiss="modal"
+					aria-hidden="true">&times;</button>
+				<h4 class="modal-title" id="myModalLabel">提问题单</h4>
+			</div>
+			<div class="modal-body">
+				<div class="form-group">
+					<label class="col-sm-3 control-label">项目<span style="color:red"> *</span></label>
+					<div class="col-sm-8">
+						<select name="problemOrderVo.projectId" id="selectProject" class="form-control" required onchange="changeProject()">
+							<option value="">请选择</option>
+							<c:forEach items="${projects}" var="project">
+								<option value="${project.id}">${project.name}</option>
+							</c:forEach>
+						</select>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="col-sm-3 control-label">版本<span style="color:red"> *</span></label>
+					<div class="col-sm-8">
+						<select name="problemOrderVo.projectVersionId" id="selectVersion" class="form-control" required>
+						</select>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="col-sm-3 control-label">模块<span style="color:red"> *</span></label>
+					<div class="col-sm-8">
+						<select name="problemOrderVo.moduleId" id="selectModule" class="form-control" required>
+						</select>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="col-sm-3 control-label">问题名称<span style="color:red"> *</span></label>
+					<div class="col-sm-8">
+						<input autocomplete="off" class="form-control" required name="problemOrderVo.orderName">
+					</div>
+				</div>
+				<div class="form-group">
+	    		<label class="col-sm-3 control-label">问题描述</label>
+	    		<div class="col-sm-8">
+	    			<textarea class="form-control" rows="3" name="problemOrderVo.description"></textarea>
+	    		</div>
+	    	  	</div> 
+	    	  	<div class="form-group">
+	    	  		<label class="col-sm-3 control-label">附件</label>
+	    			<div class="col-sm-8">
+	    			<input type="file" name="problemOrderVo.attachment" multiple>
+	    			</div>
+	    	  	</div>
+			</div>
+			<div class="modal-footer" style="text-align:center">
+				<button type="submit" class="btn btn-primary">确认</button>
+				<button type="button" class="btn btn-default" data-dismiss="modal">关闭</button>
+			</div>
+		</div>
+		</form>
+	</div>
+	</div>
+	<script src="/assets/icon/iconfont.js"></script>
+	<script src="/assets/js/layer/layer.js"></script>
+	<script type="text/javascript">
+	$(function(){
+		$("[data-toggle='tooltip']").tooltip();
+	});
+	function newProblemOrder(){
+		$("#addProblemOrder").modal('show');
+	}
+	function changeProject(){
+		var project = $("#selectProject option:selected").val();
+		$.ajax({
+			data:{'project':project},
+			url:'/performance/soft/changeProjectForShowTask',
+			success:function(data){
+				var modules = data.modules;
+				var html = '<option value="">请选择</option>';
+				for(var i=0; i<modules.length; i++){
+					html += '<option value="'+modules[i].id+'">'+modules[i].module+'</option>';
+				}
+				$("#selectModule").html(html);
+				html = '<option value="">请选择</option>';
+				var versions = data.versions;
+				for(var i=0; i<versions.length; i++){
+					html += '<option value="'+versions[i].id+'">'+versions[i].version+'</option>';
+				}
+				$("#selectVersion").html(html);
+			}
+		});
+	}
+	</script>
+  </body>
+</html>

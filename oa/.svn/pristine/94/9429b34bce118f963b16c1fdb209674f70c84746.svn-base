@@ -1,0 +1,1620 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8"
+    pageEncoding="UTF-8"%>
+<%@ taglib prefix="s" uri="/struts-tags" %>
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %> 
+<%@  taglib  uri="http://java.sun.com/jsp/jstl/functions" prefix="fn"%>
+<%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
+<!DOCTYPE html> 
+<html lang="zh-CN">
+
+<head>
+<style>
+.badge{
+	padding:3px 5px
+}
+</style>
+<script type="text/javascript">
+	$(function() {
+		set_href();
+		var type = $("#type").val();
+		var tabShowLink={
+				1:0,
+				2:1,
+				3:3,
+				4:4,
+				5:2,
+				6:5,
+				8:6,
+				10:7,
+				11:8,
+				12:13,
+				13:14,
+				14:17,
+				15:18,
+				16:19,
+				17:20,
+				18:11,
+				19:24,
+				20:12,
+				21:15,
+				22:16,
+				23:9,
+				24:21,
+				25:10,
+				26:22,
+				27:23,
+				28:25,
+				29:26,
+				30:27
+		};
+		for(key in tabShowLink){
+			if(type== key){
+				$("#myTab li:eq("+tabShowLink[key]+") a").tab("show");
+			}
+			$("#myTab li:eq("+tabShowLink[key]+") a").attr("index",key).click(function(e) {
+				e.preventDefault();
+				window.location.href = "personal/findTaskList?type="+$(this).attr("index");
+			});
+		} 
+	});
+	
+	//组合活动：添加子活动
+	$(document).on("click",".resumeadd",function(){
+		$(".resume").last().after($(".resume").eq(0).clone());
+		$(".resume").last().find("input").val("");
+		$(".resume").last().find("textarea").val("");
+	});
+	$(document).on("click",".resumedel",function(){
+		if(confirm("确认删除吗？")){
+			if($(".resume").length==1){
+				alert("最后一个工作经验不可删除！");
+			}else{
+				$(this).parent().remove();		
+			}
+		}	
+	});
+
+	function checkNum(obj) {
+		$(obj).val($(obj).val().replace(/[^0-9+\.]+/,'').replace(/\b(0+)/gi,""));
+	}
+</script>
+<script src="/assets/js/require/require2.js"></script>
+<link href="/assets/css/base.css" rel="stylesheet" type="text/css" />
+<link href="/assets/css/global.css" rel="stylesheet" type="text/css" /> 
+</head>
+  <body>
+
+    <div class="container-fluid">
+      <div class="row">
+        <%@include file="/pages/personal/panel.jsp" %>	
+        <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main">
+       	  <input type="hidden" id="type" value="${type }" />
+       	  <ul class="nav nav-tabs" role="tablist" id="myTab" style="font-size:10px;">
+			  <li role="presentation"><a href="#vacation" role="tab" data-toggle="tab">请假申请<span class="badge" style="background-color:red;<c:if test='${vacationCount == 0 }'>display:none;</c:if>">${vacationCount }</span></a></li>
+			  <li role="presentation"><a href="#assignment" role="tab" data-toggle="tab">任务分配<span class="badge" style="background-color:red;<c:if test='${assignmentCount == 0 }'>display:none;</c:if>">${assignmentCount }</span></a></li>
+			  <li role="presentation"><a href="#reimbursement" role="tab" data-toggle="tab">报销申请<span class="badge" style="background-color:red;<c:if test='${reimbursementCount == 0 }'>display:none;</c:if>">${reimbursementCount }</span></a></li>
+			  <li role="presentation"><a href="#resignation" role="tab" data-toggle="tab">离职申请<span class="badge" style="background-color:red;<c:if test='${resignationCount == 0 }'>display:none;</c:if>">${resignationCount }</span></a></li>
+			  <li role="presentation"><a href="#formal" role="tab" data-toggle="tab">转正申请<span class="badge" style="background-color:red;<c:if test='${formalCount == 0 }'>display:none;</c:if>">${formalCount }</span></a></li>
+			  <li role="presentation" <c:if test='${emailCount == 0 }'>style="display:none"</c:if> ><a href="#email" role="tab" data-toggle="tab">邮箱申请<span class="badge" style="background-color:red;<c:if test='${emailCount == 0 }'>display:none;</c:if>">${emailCount }</span></a></li>
+		  	  <li role="presentation" <c:if test='${auditCount == 0 }'>style="display:none"</c:if>><a href="#audit" role="tab" data-toggle="tab">背景调查<span class="badge" style="background-color:red;<c:if test='${auditCount == 0 }'>display:none;</c:if>">${auditCount }</span></a></li>			
+		  	  <li role="presentation" <c:if test='${socialSecurityCount == 0 }'>style="display:none"</c:if>><a href="#socialSecurity" role="tab" data-toggle="tab">社保审核<span class="badge" style="background-color:red;<c:if test='${socialSecurityCount == 0 }'>display:none;</c:if>">${socialSecurityCount }</span></a></li>
+		 	  <li role="presentation" <c:if test='${chopBorrowCount == 0 }'>style="display:none"</c:if>><a href="#chopBorrow" role="tab" data-toggle="tab">公章申请<span class="badge" style="background-color:red;<c:if test='${chopBorrowCount == 0 }'>display:none;</c:if>">${chopBorrowCount }</span></a></li>
+	 	   	  <li role="presentation" <c:if test='${chopDestroyCount == 0 }'>style="display:none"</c:if>><a href="#chopDestroy" role="tab" data-toggle="tab">印章缴销<span class="badge" style="background-color:red;<c:if test='${chopDestroyCount == 0 }'>display:none;</c:if>">${chopDestroyCount }</span></a></li>
+	 	   	  <li role="presentation" <c:if test='${carveChopCount == 0 }'>style="display:none"</c:if>><a href="#carveChop" role="tab" data-toggle="tab">印章刻制<span class="badge" style="background-color:red;<c:if test='${carveChopCount == 0 }'>display:none;</c:if>">${carveChopCount }</span></a></li>
+		 	  <li role="presentation" <c:if test='${certificateBorrowCount == 0 }'>style="display:none"</c:if>><a href="#certificateBorrow" role="tab" data-toggle="tab">证件申请<span class="badge" style="background-color:red;<c:if test='${certificateBorrowCount == 0 }'>display:none;</c:if>">${certificateBorrowCount }</span></a></li>
+		 	  <li role="presentation" <c:if test='${contractBorrowCount == 0 }'>style="display:none"</c:if>><a href="#contractBorrow" role="tab" data-toggle="tab">合同借阅<span class="badge" style="background-color:red;<c:if test='${contractBorrowCount == 0 }'>display:none;</c:if>">${contractBorrowCount }</span></a></li>
+		 	  <li role="presentation" <c:if test='${idBorrowCount == 0 }'>style="display:none"</c:if> ><a href="#idBorrow" role="tab" data-toggle="tab">身份证借用<span class="badge" style="background-color:red;<c:if test='${idBorrowCount == 0 }'>display:none;</c:if>">${idBorrowCount }</span></a></li>
+		 	  <li role="presentation" <c:if test='${contractCount == 0 }'>style="display:none"</c:if> ><a href="#contract" role="tab" data-toggle="tab">合同签署<span class="badge" style="background-color:red;<c:if test='${contractCount == 0 }'>display:none;</c:if>">${contractCount }</span></a></li>
+		 	  <li role="presentation" <c:if test='${changeContractCount == 0 }'>style="display:none"</c:if> ><a href="#changeContract" role="tab" data-toggle="tab">合同变更或解除<span class="badge" style="background-color:red;<c:if test='${changeContractCount == 0 }'>display:none;</c:if>">${changeContractCount }</span></a></li>
+		 	  <li role="presentation" <c:if test='${changeBankAccountCount == 0 }'>style="display:none"</c:if> ><a href="#changeBankAccount" role="tab" data-toggle="tab">开设、变更及撤销银行账户<span class="badge" style="background-color:red;<c:if test='${changeBankAccountCount == 0 }'>display:none;</c:if>">${changeBankAccountCount }</span></a></li>
+		 	  <li role="presentation" <c:if test='${carUseCount == 0 }'>style="display:none"</c:if>><a href="#carUse" role="tab" data-toggle="tab">车辆预约<span class="badge" style="background-color:red;<c:if test='${carUseCount == 0 }'>display:none;</c:if>">${carUseCount }</span></a></li>
+		 	  <li role="presentation" <c:if test='${advanceCount == 0 }'>style="display:none"</c:if>><a href="#advance" role="tab" data-toggle="tab">预约付款<span class="badge" style="background-color:red;<c:if test='${advanceCount == 0 }'>display:none;</c:if>">${advanceCount }</span></a></li>
+		 	  <li role="presentation" <c:if test='${vitaeCount == 0 }'>style="display:none"</c:if>><a href="#vitae" role="tab" data-toggle="tab">招聘需求审核<span class="badge" style="background-color:red;<c:if test='${vitaeCount == 0 }'>display:none;</c:if>">${vitaeCount }</span></a></li>
+		 	  <li role="presentation" <c:if test='${softPerformanceCount == 0 }'>style="display:none"</c:if>><a href="#softPerformance" role="tab" data-toggle="tab">软件部日常工作<span class="badge" style="background-color:red;<c:if test='${softPerformanceCount == 0 }'>display:none;</c:if>">${softPerformanceCount }</span></a></li>
+		 	  <li role="presentation" <c:if test='${purchasePropertyCount == 0 }'>style="display:none"</c:if>><a href="#purchaseProperty" role="tab" data-toggle="tab">财产购置<span class="badge" style="background-color:red;<c:if test='${purchasePropertyCount == 0 }'>display:none;</c:if>">${purchasePropertyCount }</span></a></li>
+		 	  <li role="presentation" <c:if test='${handlePropertyCount == 0 }'>style="display:none"</c:if>><a href="#handleProperty" role="tab" data-toggle="tab">资产处置<span class="badge" style="background-color:red;<c:if test='${handlePropertyCount == 0 }'>display:none;</c:if>">${handlePropertyCount }</span></a></li>
+		 	  <li role="presentation" <c:if test='${transferPropertyCount == 0 }'>style="display:none"</c:if>><a href="#transferProperty" role="tab" data-toggle="tab">资产调拨<span class="badge" style="background-color:red;<c:if test='${transferPropertyCount == 0 }'>display:none;</c:if>">${transferPropertyCount }</span></a></li>
+		 	  <li role="presentation" <c:if test='${commonSubjectCount == 0 }'>style="display:none"</c:if>><a href="#commonSubject" role="tab" data-toggle="tab">通用流程<span class="badge" style="background-color:red;<c:if test='${commonSubjectCount == 0 }'>display:none;</c:if>">${commonSubjectCount }</span></a></li>
+		  	  <li role="presentation" <c:if test='${shopApplyCount == 0 }'>style="display:none"</c:if>><a href="#shopApply" role="tab" data-toggle="tab">店铺申请<span class="badge" style="background-color:red;<c:if test='${shopApplyCount == 0 }'>display:none;</c:if>">${shopApplyCount}</span></a></li>
+		  	  <li role="presentation" <c:if test='${shopPayApplyCount == 0 }'>style="display:none"</c:if>><a href="#shopPayApply" role="tab" data-toggle="tab">店铺付费申请<span class="badge" style="background-color:red;<c:if test='${shopPayApplyCount == 0 }'>display:none;</c:if>">${shopPayApplyCount}</span></a></li>
+		  	  <li role="presentation" <c:if test='${workOvertimeCount == 0 }'>style="display:none"</c:if>><a href="#workOvertime" role="tab" data-toggle="tab">加班申请<span class="badge" style="background-color:red;<c:if test='${workOvertimeCount == 0 }'>display:none;</c:if>">${workOvertimeCount}</span></a></li>
+		  </ul>
+		  
+       	  <div class="tab-content">
+			  <div role="tabpanel" class="tab-pane" id="vacation">
+			  	<div class="table-responsive" style="margin-top:30px;">
+            		<table class="table table-striped">
+		              <thead>
+		                <tr>
+		                  <th>序号</th>
+		                  <th>请假人</th>
+		                  <th>岗位</th>
+		                  <th>开始时间</th>
+		                  <th>结束时间</th>
+		                  <th>休假天数</th>
+		                  <th>工作代理人</th>
+		                  <th>请假类型</th>
+		                  <th>事由</th>
+		                  <th>操作</th>
+		                </tr>
+		              </thead>
+              		  <tbody>
+		              	<c:if test="${not empty taskVOs}">
+		              	<s:set name="task_id" value="(#request.page-1)*(#request.limit)"></s:set>
+		              	<s:iterator id="taskVO" value="#request.taskVOs" status="count">
+		              		<tr>
+		              			<td class="col-sm-1"><s:property value="#task_id+1"/></td>
+		              			<td class="col-sm-1"><s:property value="#taskVO.vacationUserName" /></td>
+		              			<td class="col-sm-2"><s:iterator id="group" value="#taskVO.groupList" status="st"><s:if test="#st.index != 0 "><br></s:if><s:property value="#group"/></s:iterator></td>
+		              			<td class="col-sm-1"><s:property value="#taskVO.beginDate" /></td>
+		              			<td class="col-sm-1"><s:property value="#taskVO.endDate" /></td>
+		              			<td class="col-sm-1"><s:property value="#taskVO.vacationTime" /></td>
+		              			<td class="col-sm-1"><s:property value="#taskVO.agentName" /></td>
+		              			<td class="col-sm-1"><s:property value="#taskVO.vacationType" /></td>
+		              			<td class="col-sm-1"><s:property value="#taskVO.reason" /></td>
+		              			<td class="col-sm-2"><a href="personal/taskComplete?taskID=<s:property value='#taskVO.taskID' />&result=1&businessType=请假申请">同意</a>|
+		              								 <a href="personal/taskComplete?taskID=<s:property value='#taskVO.taskID' />&result=2&businessType=请假申请">不同意</a>
+<!-- 暂时屏蔽 该功能   原因: 领导可能有多个职务 无法判断领导department位置 -->
+<%-- 		              								 <s:if test="#taskVO.defKey == 'vacation_supervisor_audit'"> --%>
+<%-- 		              								 <br/><a href="personal/taskComplete?taskID=<s:property value='#taskVO.taskID' />&result=3&businessType=请假申请">同意(但仍需上级主管审批)</a> --%>
+<%-- 		              								 </s:if> --%>
+		              								 <s:if test="#taskVO.attachmentSize>0"><br/><a href="/personal/showVacationAttachment?taskID=<s:property value='#taskVO.taskID' />&selectedPanel=findTaskList">查看附件</a></s:if>
+		              								 <br/><a href="personal/processHistory?processInstanceID=<s:property value='#taskVO.processInstanceID'/>&selectedPanel=findTaskList">查看已审批环节</a></td>
+		              		</tr>
+		              		<s:set name="task_id" value="#task_id+1"></s:set>
+		              	</s:iterator>
+		              	</c:if>
+		              </tbody>
+           		    </table>
+          		</div> 
+          		<div class="dropdown" style="margin-top:25px;">
+		           	<label>每页显示数量：</label>
+		           	<button class="btn btn-default dropdown-toggle" type="button" id="dropdownMenu1" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
+		           		${limit}
+		           		<span class="caret"></span>
+		           	</button>
+		           	<ul class="dropdown-menu" aria-labelledby="dropdownMenu1" style="left:104px;min-width:120px;">
+					    <li><a class="dropdown-item-20" href="#">20</a></li>
+					    <li><a class="dropdown-item-50" href="#">50</a></li>
+					    <li><a class="dropdown-item-100" href="#">100</a></li>
+				    </ul>
+		           	<input type="hidden" id="page" value="${page}"/>
+		           	<input type="hidden" id="limit" value="${limit}" />
+		           	<input type="hidden" id="totalPage" value="${totalPage }" />
+		        </div>
+		        <%@include file="/includes/pager.jsp" %>
+			  </div>
+			  <div role="tabpanel" class="tab-pane" id="assignment">
+			  	<div class="table-responsive" style="margin-top:30px;">
+            		<table class="table table-striped">
+		              <thead>
+		                <tr>
+		                  <th>序号</th>
+		                  <th>标题</th>
+		                  <th>发起人</th>
+		                  <th>发起时间</th>
+		                  <th>操作</th>
+		                </tr>
+		              </thead>
+              		  <tbody>
+		              	<c:if test="${not empty taskVOs}">
+		              	<s:set name="task_id" value="(#request.page-1)*(#request.limit)"></s:set>
+		              	<s:iterator id="taskVO" value="#request.taskVOs" status="count">
+		              		<tr>
+		              			<td class="col-sm-1"><s:property value="#task_id+1"/></td>
+		              			<td class="col-sm-3">【<s:property value="#taskVO.taskName"/>】<s:property value="#taskVO.title"/></td>
+		              			<td class="col-sm-2"><s:property value="#taskVO.requestUserName"/></td>
+		              			<td class="col-sm-2"><s:property value="#taskVO.requestDate"/></td>
+		              			<td class="col-sm-3"><s:if test="#taskVO.taskName == '员工填写申请表'"><a href="personal/fillFormal?taskID=<s:property value='#taskVO.taskID' />">填写申请表</a></s:if><s:else><a href="personal/perform?taskID=<s:property value='#taskVO.taskID' />">办理</a></s:else></td>
+		              		</tr>
+		              		<s:set name="task_id" value="#task_id+1"></s:set>
+		              	</s:iterator>
+		              	</c:if>
+		              </tbody>
+           		    </table>
+          		</div> 
+          		<div class="dropdown" style="margin-top:25px;">
+		           	<label>每页显示数量：</label>
+		           	<button class="btn btn-default dropdown-toggle" type="button" id="dropdownMenu1" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
+		           		${limit}
+		           		<span class="caret"></span>
+		           	</button>
+		           	<ul class="dropdown-menu" aria-labelledby="dropdownMenu1" style="left:104px;min-width:120px;">
+					    <li><a class="dropdown-item-20" href="#">20</a></li>
+					    <li><a class="dropdown-item-50" href="#">50</a></li>
+					    <li><a class="dropdown-item-100" href="#">100</a></li>
+				    </ul>
+		           	<input type="hidden" id="page" value="${page}"/>
+		           	<input type="hidden" id="limit" value="${limit}" />
+		           	<input type="hidden" id="totalPage" value="${totalPage }" />
+		        </div>
+		        <%@include file="/includes/pager.jsp" %>
+			  </div>
+			  <div role="tabpanel" class="tab-pane" id="reimbursement">
+			  
+			    <form  class="form-horizontal" action="/personal/findTaskList?">
+          	<input style="display:none" name="type" value="5"/>
+			<div class="form-group" style="margin-top:10px">
+				<label for="beginDate" class="col-sm-1 control-label">报销单号</label>
+				<div class="col-sm-2">
+			    	<input type="text" class="form-control" id="No_code" name="No_code" value="${No_code}"  placeholder="报销编号">
+			    </div>
+			    <label class="col-sm-1 control-label">发起人</label>
+				<div class="col-sm-2">
+			    	<input type="text" class="form-control" name="applyerName" value="${applyerName}" onkeyup="checkEmpty()" autoComplete="off" id="applyer">
+			    	<input name="applyerId" type="hidden" value="${applyerId}"/>
+			    </div>
+			    <label for="beginDate" class="col-sm-1 control-label">发起时间</label>
+			    <div class="col-sm-2">
+			    	<input type="text" class="form-control" id="beginDate" name="startTime" value="${startTime}" onclick="WdatePicker({maxDate:'%y-%M-%d'})" placeholder="开始时间">
+			    </div>
+			    <div class="col-sm-2">
+			    	<input type="text" class="form-control" id="endDate" name="endTime" value="${endTime }" onclick="WdatePicker({maxDate:'%y-%M-%d'})" placeholder="结束时间">
+			    </div>
+			    <div class="col-sm-1">
+			    <button type="submit"  class="btn btn-primary"  >查询</button>
+			    </div>
+			</div>
+          </form>
+			  	<div class="table-responsive" style="margin-top:30px;">
+			  		<table class="table table-striped">
+		              <thead>
+		                <tr>
+		                  <th>序号</th>
+		                  <th>标题</th>
+		                  <th>报销单号</th>
+                 		  <th>合计金额</th>
+		                  <th>发起人</th>
+		                  <th>发起时间</th>
+		                  <th>操作</th>
+		                </tr>
+		              </thead>
+              		  <tbody>
+		              	<c:if test="${not empty taskVOs}">
+		              	<s:set name="task_id" value="(#request.page-1)*(#request.limit)"></s:set>
+		              	<s:iterator id="taskVO" value="#request.taskVOs" status="count">
+		              		<tr>
+		              			<td class="col-sm-1"><s:property value="#task_id+1"/></td>
+		              			<td class="col-sm-2">【<s:property value="#taskVO.taskName"/>】<s:property value="#taskVO.title"/></td>
+		              			<td class="col-sm-2"><s:property value="#taskVO.reimbursementNo"/></td>
+              					<td class="col-sm-2"><s:property value="#taskVO.totalAmount" /></td>
+		              			<td class="col-sm-1"><s:property value="#taskVO.requestUserName"/></td>
+		              			<td class="col-sm-2"><s:property value="#taskVO.requestDate"/></td>
+		              			<td class="col-sm-1"><a href="personal/auditReimbursement?taskID=<s:property value='#taskVO.taskID' />"><s:if test="#request.taskDefKey == 'updateAccount'">办理</s:if><s:else>审批</s:else></a></td>
+		              		</tr>
+		              		<s:set name="task_id" value="#task_id+1"></s:set>
+		              	</s:iterator>
+		              	</c:if>
+		              </tbody>
+           			</table>
+			  	</div>
+			  	<div class="dropdown" style="margin-top:25px;">
+		           	<label>每页显示数量：</label>
+		           	<button class="btn btn-default dropdown-toggle" type="button" id="dropdownMenu1" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
+		           		${limit}
+		           		<span class="caret"></span>
+		           	</button>
+		           	<ul class="dropdown-menu" aria-labelledby="dropdownMenu1" style="left:104px;min-width:120px;">
+					    <li><a class="dropdown-item-20" href="#">20</a></li>
+					    <li><a class="dropdown-item-50" href="#">50</a></li>
+					    <li><a class="dropdown-item-100" href="#">100</a></li>
+				    </ul>
+		           	<input type="hidden" id="page" value="${page}"/>
+		           	<input type="hidden" id="limit" value="${limit}" />
+		           	<input type="hidden" id="totalPage" value="${totalPage }" />
+		        </div>
+		        <%@include file="/includes/pager.jsp" %>
+			  </div>
+			  <div role="tabpanel" class="tab-pane" id="resignation">
+			  	<div class="table-responsive" style="margin-top:30px;">
+			  		<table class="table table-striped">
+		              <thead>
+		                <tr>
+		                  <th>序号</th>
+		                  <th>标题</th>
+		                  <th>岗位</th>
+		                  <th>发起人</th>
+		                  <th>发起时间</th>
+		                  <th>操作</th>
+		                </tr>
+		              </thead>
+              		  <tbody>
+		              	<c:if test="${not empty taskVOs}">
+		              	<s:set name="task_id" value="(#request.page-1)*(#request.limit)"></s:set>
+		              	<s:iterator id="taskVO" value="#request.taskVOs" status="count">
+		              		<tr>
+		              			<td class="col-sm-1"><s:property value="#task_id+1"/></td>
+		              			<td class="col-sm-3">【<s:property value="#taskVO.taskName"/>】<s:property value="#taskVO.title"/></td>
+		              			<td class="col-sm-3"><s:iterator id="group" value="#taskVO.groupList" status="st"><s:if test="#st.index != 0 "><br></s:if><s:property value="#group"/></s:iterator></td>
+		              			<td class="col-sm-2"><s:property value="#taskVO.requestUserName"/></td>
+		              			<td class="col-sm-2"><s:property value="#taskVO.requestDate"/></td>
+		              			<td class="col-sm-1"><a href="personal/perform?taskID=<s:property value='#taskVO.taskID' />">办理</a></td>
+		              		</tr>
+		              		<s:set name="task_id" value="#task_id+1"></s:set>
+		              	</s:iterator>
+		              	</c:if>
+		              </tbody>
+           			</table>
+			  	</div>
+			  	<div class="dropdown" style="margin-top:25px;">
+		           	<label>每页显示数量：</label>
+		           	<button class="btn btn-default dropdown-toggle" type="button" id="dropdownMenu1" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
+		           		${limit}
+		           		<span class="caret"></span>
+		           	</button>
+		           	<ul class="dropdown-menu" aria-labelledby="dropdownMenu1" style="left:104px;min-width:120px;">
+					    <li><a class="dropdown-item-20" href="#">20</a></li>
+					    <li><a class="dropdown-item-50" href="#">50</a></li>
+					    <li><a class="dropdown-item-100" href="#">100</a></li>
+				    </ul>
+		           	<input type="hidden" id="page" value="${page}"/>
+		           	<input type="hidden" id="limit" value="${limit}" />
+		           	<input type="hidden" id="totalPage" value="${totalPage }" />
+		        </div>
+		        <%@include file="/includes/pager.jsp" %>
+			  </div>
+			  <div role="tabpanel" class="tab-pane" id="formal">
+			  	<div class="table-responsive" style="margin-top:30px;">
+			  		<table class="table table-striped">
+		              <thead>
+		                <tr>
+		                  <th>序号</th>
+		                  <th>标题</th>
+		                  <th>入职日期</th>
+		                  <th>岗位</th>
+		                  <th>发起人</th>
+		                  <th>发起时间</th>
+		                  <th>操作</th>
+		                </tr>
+		              </thead>
+              		  <tbody>
+		              	<c:if test="${not empty taskVOs}">
+		              	<s:set name="task_id" value="(#request.page-1)*(#request.limit)"></s:set>
+		              	<s:iterator id="taskVO" value="#request.taskVOs" status="count">
+		              		<tr>
+		              			<td class="col-sm-1"><s:property value="#task_id+1"/></td>
+		              			<td class="col-sm-2">【<s:property value="#taskVO.taskName"/>】<s:property value="#taskVO.title"/></td>
+		              			<td class="col-sm-2"><s:property value="#taskVO.entryDate" /></td>
+		              			<td class="col-sm-3"><s:iterator id="group" value="#taskVO.groupList" status="st"><s:if test="#st.index != 0 "><br></s:if><s:property value="#group"/></s:iterator></td>
+		              			<td class="col-sm-1"><s:property value="#taskVO.requestUserName"/></td>
+		              			<td class="col-sm-2"><s:property value="#taskVO.requestDate"/></td>
+		              			<td class="col-sm-3"><s:if test="#taskVO.taskName == '员工填写申请表'"><a href="personal/fillFormal?taskID=<s:property value='#taskVO.taskID' />">填写申请表</a></s:if><s:else><a href="personal/perform?taskID=<s:property value='#taskVO.taskID' />">办理</a></s:else></td>
+		              		</tr>
+		              		<s:set name="task_id" value="#task_id+1"></s:set>
+		              	</s:iterator>
+		              	</c:if>
+		              </tbody>
+           			</table>
+			  	</div>
+			  	<div class="dropdown" style="margin-top:25px;">
+		           	<label>每页显示数量：</label>
+		           	<button class="btn btn-default dropdown-toggle" type="button" id="dropdownMenu1" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
+		           		${limit}
+		           		<span class="caret"></span>
+		           	</button>
+		           	<ul class="dropdown-menu" aria-labelledby="dropdownMenu1" style="left:104px;min-width:120px;">
+					    <li><a class="dropdown-item-20" href="#">20</a></li>
+					    <li><a class="dropdown-item-50" href="#">50</a></li>
+					    <li><a class="dropdown-item-100" href="#">100</a></li>
+				    </ul>
+		           	<input type="hidden" id="page" value="${page}"/>
+		           	<input type="hidden" id="limit" value="${limit}" />
+		           	<input type="hidden" id="totalPage" value="${totalPage }" />
+		        </div>
+		        <%@include file="/includes/pager.jsp" %>
+			  </div>
+			  <div role="tabpanel" class="tab-pane" id="email">
+			  	<div class="table-responsive" style="margin-top:30px;">
+			  		<table class="table table-striped">
+		              <thead>
+		                <tr>
+		                  <th>序号</th>
+		                  <th>标题</th>
+		                  <th>发起人</th>
+		                  <th>发起时间</th>
+		                  <th>操作</th>
+		                </tr>
+		              </thead>
+              		  <tbody>
+		              	<c:if test="${not empty taskVOs}">
+		              	<s:set name="task_id" value="(#request.page-1)*(#request.limit)"></s:set>
+		              	<s:iterator id="taskVO" value="#request.taskVOs" status="count">
+		              		<tr>
+		              			<td class="col-sm-1"><s:property value="#task_id+1"/></td>
+		              			<td class="col-sm-3">【<s:property value="#taskVO.taskName"/>】<s:property value="#taskVO.title"/></td>
+		              			<td class="col-sm-2"><s:property value="#taskVO.requestUserName"/></td>
+		              			<td class="col-sm-2"><s:property value="#taskVO.requestDate"/></td>
+		              			<td class="col-sm-3"><a href="personal/perform?taskID=<s:property value='#taskVO.taskID' />">办理</a></td>
+		              		</tr>
+		              		<s:set name="task_id" value="#task_id+1"></s:set>
+		              	</s:iterator>
+		              	</c:if>
+		              </tbody>
+           			</table>
+			  	</div>
+			  	<div class="dropdown" style="margin-top:25px;">
+		           	<label>每页显示数量：</label>
+		           	<button class="btn btn-default dropdown-toggle" type="button" id="dropdownMenu1" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
+		           		${limit}
+		           		<span class="caret"></span>
+		           	</button>
+		           	<ul class="dropdown-menu" aria-labelledby="dropdownMenu1" style="left:104px;min-width:120px;">
+					    <li><a class="dropdown-item-20" href="#">20</a></li>
+					    <li><a class="dropdown-item-50" href="#">50</a></li>
+					    <li><a class="dropdown-item-100" href="#">100</a></li>
+				    </ul>
+		           	<input type="hidden" id="page" value="${page}"/>
+		           	<input type="hidden" id="limit" value="${limit}" />
+		           	<input type="hidden" id="totalPage" value="${totalPage }" />
+		        </div>
+		        <%@include file="/includes/pager.jsp" %>
+			  </div>
+
+			   <div role="tabpanel" class="tab-pane" id="trip">
+			  	<div class="table-responsive" style="margin-top:30px;">
+			  		<table class="table table-striped">
+		              <thead>
+		                <tr>
+		                  <th>序号</th>
+		                  <th>标题</th>
+		                  <th>发起人</th>
+		                  <th>发起时间</th>
+		                  <th>操作</th>
+		                </tr>
+		              </thead>
+              		  <tbody>
+		              	<c:if test="${not empty taskVOs}">
+		              	<s:set name="task_id" value="(#request.page-1)*(#request.limit)"></s:set>
+		              	<s:iterator id="taskVO" value="#request.taskVOs" status="count">
+		              		<tr>
+		              			<td class="col-sm-1"><s:property value="#task_id+1"/></td>
+		              			<td class="col-sm-3">【<s:property value="#taskVO.taskName"/>】<s:property value="#taskVO.title"/></td>
+		              			<td class="col-sm-2"><s:property value="#taskVO.requestUserName"/></td>
+		              			<td class="col-sm-2"><s:property value="#taskVO.requestDate"/></td>
+		              			<td class="col-sm-3"><a href="personal/perform?taskID=<s:property value='#taskVO.taskID' />">办理</a></td>
+		              		</tr>
+		              		<s:set name="task_id" value="#task_id+1"></s:set>
+		              	</s:iterator>
+		              	</c:if>
+		              </tbody>
+           			</table>
+			  	</div>
+			  	<div class="dropdown" style="margin-top:25px;">
+		           	<label>每页显示数量：</label>
+		           	<button class="btn btn-default dropdown-toggle" type="button" id="dropdownMenu1" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
+		           		${limit}
+		           		<span class="caret"></span>
+		           	</button>
+		           	<ul class="dropdown-menu" aria-labelledby="dropdownMenu1" style="left:104px;min-width:120px;">
+					    <li><a class="dropdown-item-20" href="#">20</a></li>
+					    <li><a class="dropdown-item-50" href="#">50</a></li>
+					    <li><a class="dropdown-item-100" href="#">100</a></li>
+				    </ul>
+		           	<input type="hidden" id="page" value="${page}"/>
+		           	<input type="hidden" id="limit" value="${limit}" />
+		           	<input type="hidden" id="totalPage" value="${totalPage }" />
+		        </div>
+		        <%@include file="/includes/pager.jsp" %>
+			  </div>
+			  
+			  <div role="tabpanel" class="tab-pane" id="audit">
+			  	<c:if test="${empty staffAuditVO }"><div class="table-responsive" style="margin-top:30px;">暂无；</div></c:if>
+			    <c:if test="${not empty staffAuditVO }">
+			  	<form action="personal/fillAuditForm" method="post" >
+			  	<div class="table-responsive" style="margin-top:30px;">
+			  	<input type="hidden" name="taskID" value="${taskID }" />
+			  		<div class="fz20">基本资料<span style="color:red;font-size:16px;">（调查信息请尽快如实汇报，如有弄虚作假，后果自负！）</span></div>
+					<div class="mt10">
+					<table class="form_tabA">
+					  <tbody>
+					    <tr>
+					      <td width="100">学历证书编号：</td>
+					      <td><input id="num" name="staffAuditVO.educationID" type="text" class="input" value="${staffAuditVO.educationID }" required="required" /></td>
+						  <td width="110">学位证书编号：</td>
+					      <td><input id="num" name="staffAuditVO.degreeID" type="text" class="input" value="${staffAuditVO.degreeID }" /></td>
+					    </tr>
+						<tr>
+					      <td>案底说明：</td>
+					      <td colspan="3"><textarea name="staffAuditVO.criminalRecord" id="textarea" cols="45" rows="2" class="w80p textarea" >${staffAuditVO.criminalRecord }</textarea></td>
+					    </tr>
+					  </tbody>
+					</table>
+					</div>
+					<div class="mt20 bdt_gray pt20 clearfix"><span class="fz20 fl">工作经验</span><a href="javascript:void(0);" class="oa_btn resumeadd fr">添加</a></div>
+					<div class="blank10"></div>
+					<div class="resume">
+						<a href="javascript:void(0);" class="resumedel"></a>
+						<table class="form_tabA">
+						  <tbody>
+							<tr>
+							  <td width="80">企业名称：</td>
+							  <td><input id="dw" name="staffAuditVO.company" type="text" class="input" required="required"/></td>
+						<!-- 	  <td width="120">工作时间：</td>
+							  <td><input id="num" name="staffAuditVO.years" type="text" class="input" required="required" oninput="checkNum(this);"/></td> -->
+							  <td>开始时间：</td>
+							  <td>
+	    			 			<input autocomplete="off" type="text" class="input" name="staffAuditVO.beginDate" 
+			    					onclick="WdatePicker({ dateFmt: 'yyyy-MM-dd' })" placeholder="开始时间">
+							  </td>
+							  <td>结束时间：</td>
+							  <td>
+	    			 			<input autocomplete="off" type="text" class="input" name="staffAuditVO.endDate"
+			    					onclick="WdatePicker({ dateFmt: 'yyyy-MM-dd' })" placeholder="结束时间">
+							  </td>
+							</tr><tr>
+							  <td>证明人：</td>
+							  <td><input id="num" name="staffAuditVO.referee" type="text" class="input" required="required"/></td>
+							  <td>证明人电话：</td>
+							  <td><input id="num" name="staffAuditVO.telephone" type="text" class="input" required="required"/></td>
+							</tr>
+							<tr>
+							  <td>工作描述：</td>
+							  <td colspan="5"><textarea name="staffAuditVO.description" id="textarea" cols="45" rows="4" class="w80p textarea" required="required"></textarea></td>
+							</tr>
+						  </tbody>
+						</table>
+					</div>
+					<div class="mt30 tc"><input type="submit" id="tijiao" value="提交" class="oa_btn btn_s bg_blue plr20"/></div>
+			  	</div>
+			  	</form>
+			  	</c:if>
+			  </div>
+			  <div role="tabpanel" class="tab-pane" id="socialSecurity">
+			  	<div class="table-responsive" style="margin-top:30px;">
+			  		<table class="table table-striped">
+		              <thead>
+		                <tr>
+		                  <th>序号</th>
+		                  <th>标题</th>
+		                  <th>发起人</th>
+		                  <th>发起时间</th>
+		                  <th>操作</th>
+		                </tr>
+		              </thead>
+              		  <tbody>
+		              	<c:if test="${not empty taskVOs}">
+		              	<s:set name="task_id" value="(#request.page-1)*(#request.limit)"></s:set>
+		              	<s:iterator id="taskVO" value="#request.taskVOs" status="count">
+		              		<tr>
+		              			<td class="col-sm-1"><s:property value="#task_id+1"/></td>
+		              			<td class="col-sm-3">【<s:property value="#taskVO.taskName"/>】<s:property value="#taskVO.title"/></td>
+		              			<td class="col-sm-2"><s:property value="#taskVO.requestUserName"/></td>
+		              			<td class="col-sm-2"><s:property value="#taskVO.requestDate"/></td>
+		              			<td class="col-sm-3"><a href="personal/auditSocialSecurity?taskID=<s:property value='#taskVO.taskID' />">审批</a></td>
+		              		</tr>
+		              		<s:set name="task_id" value="#task_id+1"></s:set>
+		              	</s:iterator>
+		              	</c:if>
+		              </tbody>
+           			</table>
+			  	</div>
+			  	<div class="dropdown" style="margin-top:25px;">
+		           	<label>每页显示数量：</label>
+		           	<button class="btn btn-default dropdown-toggle" type="button" id="dropdownMenu1" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
+		           		${limit}
+		           		<span class="caret"></span>
+		           	</button>
+		           	<ul class="dropdown-menu" aria-labelledby="dropdownMenu1" style="left:104px;min-width:120px;">
+					    <li><a class="dropdown-item-20" href="#">20</a></li>
+					    <li><a class="dropdown-item-50" href="#">50</a></li>
+					    <li><a class="dropdown-item-100" href="#">100</a></li>
+				    </ul>
+		           	<input type="hidden" id="page" value="${page}"/>
+		           	<input type="hidden" id="limit" value="${limit}" />
+		           	<input type="hidden" id="totalPage" value="${totalPage }" />
+		        </div>
+		        <%@include file="/includes/pager.jsp" %>
+			  </div>
+			  
+			  <div role="tabpanel" class="tab-pane" id="chopBorrow">
+			  	<div class="table-responsive" style="margin-top:30px;">
+			  		<table class="table table-striped">
+		              <thead>
+		                <tr>
+		                  <th>序号</th>
+		                  <th>标题</th>
+		                  <th>发起人</th>
+		                  <th>发起时间</th>
+		                  <th>操作</th>
+		                </tr>
+		              </thead>
+              		  <tbody>
+		              	<c:if test="${not empty chopTasksVos}">
+		              	<c:set var="startIndex" value="${(page-1)*limit }"></c:set>
+					
+		              		<c:forEach items="${chopTasksVos}" var= "item"  varStatus="index" >
+		              		<tr>
+			              		<td>${index.index+startIndex+1}</td>
+			              		<td>${item.title}</td>
+			              		<td>${item.requestUserName}</td>
+			              		<td>${item.requestDate }</td>
+			              		<td><a href="personal/perform?taskID=${item.taskID}">审批</a></td>
+			              		
+		              		</c:forEach>
+		              	</c:if>
+		              </tbody>
+           			</table>
+			  	</div>
+			  	<div class="dropdown" style="margin-top:25px;">
+		           	<label>每页显示数量：</label>
+		           	<button class="btn btn-default dropdown-toggle" type="button" id="dropdownMenu1" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
+		           		${limit}
+		           		<span class="caret"></span>
+		           	</button>
+		           	<ul class="dropdown-menu" aria-labelledby="dropdownMenu1" style="left:104px;min-width:120px;">
+					    <li><a class="dropdown-item-20" href="#">20</a></li>
+					    <li><a class="dropdown-item-50" href="#">50</a></li>
+					    <li><a class="dropdown-item-100" href="#">100</a></li>
+				    </ul>
+		           	<input type="hidden" id="page" value="${page}"/>
+		           	<input type="hidden" id="limit" value="${limit}" />
+		           	<input type="hidden" id="totalPage" value="${totalPage }" />
+		        </div>
+		        <%@include file="/includes/pager.jsp" %>
+			  </div>
+			  <div role="tabpanel" class="tab-pane" id="certificateBorrow">
+			  	<div class="table-responsive" style="margin-top:30px;">
+			  		<table class="table table-striped">
+		              <thead>
+		                <tr>
+		                  <th>序号</th>
+		                  <th>标题</th>
+		                  <th>发起人</th>
+		                  <th>发起时间</th>
+		                  <th>操作</th>
+		                </tr>
+		              </thead>
+              		  <tbody>
+		              	<c:if test="${not empty certificateTasksVos}">
+		              	<c:set var="startIndex" value="${(page-1)*limit }"></c:set>
+					
+		              		<c:forEach items="${certificateTasksVos}" var= "item"  varStatus="index" >
+		              		<tr>
+			              		<td>${index.index+startIndex+1}</td>
+			              		<td>${item.title}</td>
+			              		<td>${item.requestUserName}</td>
+			              		<td>${item.requestDate }</td>
+			              		<td><a href="personal/perform?taskID=${item.taskID}">审批</a></td>
+			              		
+		              		</c:forEach>
+		              	</c:if>
+		              </tbody>
+           			</table>
+			  	</div>
+			  	<div class="dropdown" style="margin-top:25px;">
+		           	<label>每页显示数量：</label>
+		           	<button class="btn btn-default dropdown-toggle" type="button" id="dropdownMenu1" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
+		           		${limit}
+		           		<span class="caret"></span>
+		           	</button>
+		           	<ul class="dropdown-menu" aria-labelledby="dropdownMenu1" style="left:104px;min-width:120px;">
+					    <li><a class="dropdown-item-20" href="#">20</a></li>
+					    <li><a class="dropdown-item-50" href="#">50</a></li>
+					    <li><a class="dropdown-item-100" href="#">100</a></li>
+				    </ul>
+		           	<input type="hidden" id="page" value="${page}"/>
+		           	<input type="hidden" id="limit" value="${limit}" />
+		           	<input type="hidden" id="totalPage" value="${totalPage }" />
+		        </div>
+		        <%@include file="/includes/pager.jsp" %>
+			  </div>
+			  <div role="tabpanel" class="tab-pane" id="contractBorrow">
+			  	<div class="table-responsive" style="margin-top:30px;">
+			  		<table class="table table-striped">
+		              <thead>
+		                <tr>
+		                  <th>序号</th>
+		                  <th>标题</th>
+		                  <th>发起人</th>
+		                  <th>发起时间</th>
+		                  <th>操作</th>
+		                </tr>
+		              </thead>
+              		  <tbody>
+		              	<c:if test="${not empty contractTasksVos}">
+		              	<c:set var="startIndex" value="${(page-1)*limit }"></c:set>
+					
+		              		<c:forEach items="${contractTasksVos}" var= "item"  varStatus="index" >
+		              		<tr>
+			              		<td>${index.index+startIndex+1}</td>
+			              		<td>${item.title}</td>
+			              		<td>${item.requestUserName}</td>
+			              		<td>${item.requestDate }</td>
+			              		<td><a href="personal/perform?taskID=${item.taskID}">审批</a></td>
+			              		
+		              		</c:forEach>
+		              	</c:if>
+		              </tbody>
+           			</table>
+			  	</div>
+			  	<div class="dropdown" style="margin-top:25px;">
+		           	<label>每页显示数量：</label>
+		           	<button class="btn btn-default dropdown-toggle" type="button" id="dropdownMenu1" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
+		           		${limit}
+		           		<span class="caret"></span>
+		           	</button>
+		           	<ul class="dropdown-menu" aria-labelledby="dropdownMenu1" style="left:104px;min-width:120px;">
+					    <li><a class="dropdown-item-20" href="#">20</a></li>
+					    <li><a class="dropdown-item-50" href="#">50</a></li>
+					    <li><a class="dropdown-item-100" href="#">100</a></li>
+				    </ul>
+		           	<input type="hidden" id="page" value="${page}"/>
+		           	<input type="hidden" id="limit" value="${limit}" />
+		           	<input type="hidden" id="totalPage" value="${totalPage }" />
+		        </div>
+		        <%@include file="/includes/pager.jsp" %>
+			  </div>
+			  <div role="tabpanel" class="tab-pane" id="idBorrow">
+			  	<div class="table-responsive" style="margin-top:30px;">
+			  		<table class="table table-striped">
+		              <thead>
+		                <tr>
+		                  <th>序号</th>
+		                  <th>标题</th>
+		                  <th>发起人</th>
+		                  <th>发起时间</th>
+		                  <th>操作</th>
+		                </tr>
+		              </thead>
+              		  <tbody>
+		              	<c:if test="${not empty idBorrowTasksVos}">
+		              	<c:set var="startIndex" value="${(page-1)*limit }"></c:set>
+					
+		              		<c:forEach items="${idBorrowTasksVos}" var= "item"  varStatus="index" >
+		              		<tr>
+			              		<td>${index.index+startIndex+1}</td>
+			              		<td>${item.title}</td>
+			              		<td>${item.requestUserName}</td>
+			              		<td>${item.requestDate }</td>
+			              		<td><a href="personal/perform?taskID=${item.taskID}">审批</a></td>
+			              		
+		              		</c:forEach>
+		              	</c:if>
+		              </tbody>
+           			</table>
+			  	</div>
+			  	<div class="dropdown" style="margin-top:25px;">
+		           	<label>每页显示数量：</label>
+		           	<button class="btn btn-default dropdown-toggle" type="button" id="dropdownMenu1" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
+		           		${limit}
+		           		<span class="caret"></span>
+		           	</button>
+		           	<ul class="dropdown-menu" aria-labelledby="dropdownMenu1" style="left:104px;min-width:120px;">
+					    <li><a class="dropdown-item-20" href="#">20</a></li>
+					    <li><a class="dropdown-item-50" href="#">50</a></li>
+					    <li><a class="dropdown-item-100" href="#">100</a></li>
+				    </ul>
+		           	<input type="hidden" id="page" value="${page}"/>
+		           	<input type="hidden" id="limit" value="${limit}" />
+		           	<input type="hidden" id="totalPage" value="${totalPage }" />
+		        </div>
+		        <%@include file="/includes/pager.jsp" %>
+			  </div>
+			  
+			   <div role="tabpanel" class="tab-pane" id="contract">
+			  	<div class="table-responsive" style="margin-top:30px;">
+			  		<table class="table table-striped">
+		              <thead>
+		                <tr>
+		                  <th>序号</th>
+		                  <th>标题</th>
+		                  <th>发起人</th>
+		                  <th>发起时间</th>
+		                  <th>操作</th>
+		                </tr>
+		              </thead>
+              		  <tbody>
+		              	<c:if test="${not empty contractTaskVos}">
+		              	<c:set var="startIndex" value="${(page-1)*limit }"></c:set>
+		              		<c:forEach items="${contractTaskVos}" var= "item"  varStatus="index" >
+		              		<tr>
+			              		<td>${index.index+startIndex+1}</td>
+			              		<td>${item.title}</td>
+			              		<td>${item.requestUserName}</td>
+			              		<td>${item.requestDate }</td>
+			              		<td><a href="personal/perform?taskID=${item.taskID}">审批</a></td>
+		              		</c:forEach>
+		              	</c:if>
+		              </tbody>
+           			</table>
+			  	</div>
+			  	<div class="dropdown" style="margin-top:25px;">
+		           	<label>每页显示数量：</label>
+		           	<button class="btn btn-default dropdown-toggle" type="button" id="dropdownMenu1" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
+		           		${limit}
+		           		<span class="caret"></span>
+		           	</button>
+		           	<ul class="dropdown-menu" aria-labelledby="dropdownMenu1" style="left:104px;min-width:120px;">
+					    <li><a class="dropdown-item-20" href="#">20</a></li>
+					    <li><a class="dropdown-item-50" href="#">50</a></li>
+					    <li><a class="dropdown-item-100" href="#">100</a></li>
+				    </ul>
+		           	<input type="hidden" id="page" value="${page}"/>
+		           	<input type="hidden" id="limit" value="${limit}" />
+		           	<input type="hidden" id="totalPage" value="${totalPage }" />
+		        </div>
+		        <%@include file="/includes/pager.jsp" %>
+			  </div>
+			  <div role="tabpanel" class="tab-pane" id="changeContract">
+			  	<div class="table-responsive" style="margin-top:30px;">
+			  		<table class="table table-striped">
+		              <thead>
+		                <tr>
+		                  <th>序号</th>
+		                  <th>标题</th>
+		                  <th>发起人</th>
+		                  <th>发起时间</th>
+		                  <th>操作</th>
+		                </tr>
+		              </thead>
+              		  <tbody>
+		              	<c:if test="${not empty contractChangeTaskVos}">
+		              	<c:set var="startIndex" value="${(page-1)*limit }"></c:set>
+		              		<c:forEach items="${contractChangeTaskVos}" var= "item"  varStatus="index" >
+		              		<tr>
+			              		<td>${index.index+startIndex+1}</td>
+			              		<td>${item.title}</td>
+			              		<td>${item.requestUserName}</td>
+			              		<td>${item.requestDate }</td>
+			              		<td><a href="personal/perform?taskID=${item.taskID}">审批</a></td>
+		              		</c:forEach>
+		              	</c:if>
+		              </tbody>
+           			</table>
+			  	</div>
+			  	<div class="dropdown" style="margin-top:25px;">
+		           	<label>每页显示数量：</label>
+		           	<button class="btn btn-default dropdown-toggle" type="button" id="dropdownMenu1" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
+		           		${limit}
+		           		<span class="caret"></span>
+		           	</button>
+		           	<ul class="dropdown-menu" aria-labelledby="dropdownMenu1" style="left:104px;min-width:120px;">
+					    <li><a class="dropdown-item-20" href="#">20</a></li>
+					    <li><a class="dropdown-item-50" href="#">50</a></li>
+					    <li><a class="dropdown-item-100" href="#">100</a></li>
+				    </ul>
+		           	<input type="hidden" id="page" value="${page}"/>
+		           	<input type="hidden" id="limit" value="${limit}" />
+		           	<input type="hidden" id="totalPage" value="${totalPage }" />
+		        </div>
+		        <%@include file="/includes/pager.jsp" %>
+			  </div>
+			   <div role="tabpanel" class="tab-pane" id="changeBankAccount">
+			  	<div class="table-responsive" style="margin-top:30px;">
+			  		<table class="table table-striped">
+		              <thead>
+		                <tr>
+		                  <th>序号</th>
+		                  <th>标题</th>
+		                  <th>发起人</th>
+		                  <th>发起时间</th>
+		                  <th>操作</th>
+		                </tr>
+		              </thead>
+              		  <tbody>
+		              	<c:if test="${not empty changeBankAccountTaskVos}">
+		              	<c:set var="startIndex" value="${(page-1)*limit }"></c:set>
+		              		<c:forEach items="${changeBankAccountTaskVos}" var= "item"  varStatus="index" >
+		              		<tr>
+			              		<td>${index.index+startIndex+1}</td>
+			              		<td>${item.title}</td>
+			              		<td>${item.requestUserName}</td>
+			              		<td>${item.requestDate }</td>
+			              		<td><a href="personal/perform?taskID=${item.taskID}">审批</a></td>
+		              		</c:forEach>
+		              	</c:if>
+		              </tbody>
+           			</table>
+			  	</div>
+			  	<div class="dropdown" style="margin-top:25px;">
+		           	<label>每页显示数量：</label>
+		           	<button class="btn btn-default dropdown-toggle" type="button" id="dropdownMenu1" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
+		           		${limit}
+		           		<span class="caret"></span>
+		           	</button>
+		           	<ul class="dropdown-menu" aria-labelledby="dropdownMenu1" style="left:104px;min-width:120px;">
+					    <li><a class="dropdown-item-20" href="#">20</a></li>
+					    <li><a class="dropdown-item-50" href="#">50</a></li>
+					    <li><a class="dropdown-item-100" href="#">100</a></li>
+				    </ul>
+		           	<input type="hidden" id="page" value="${page}"/>
+		           	<input type="hidden" id="limit" value="${limit}" />
+		           	<input type="hidden" id="totalPage" value="${totalPage }" />
+		        </div>
+		        <%@include file="/includes/pager.jsp" %>
+			  </div>
+			   <div role="tabpanel" class="tab-pane" id="chopDestroy">
+			  	<div class="table-responsive" style="margin-top:30px;">
+			  		<table class="table table-striped">
+		              <thead>
+		                <tr>
+		                  <th>序号</th>
+		                  <th>标题</th>
+		                  <th>发起人</th>
+		                  <th>发起时间</th>
+		                  <th>操作</th>
+		                </tr>
+		              </thead>
+              		  <tbody>
+		              	<c:if test="${not empty chopDestroyTaskVos}">
+		              	<c:set var="startIndex" value="${(page-1)*limit }"></c:set>
+		              		<c:forEach items="${chopDestroyTaskVos}" var= "item"  varStatus="index" >
+		              		<tr>
+			              		<td>${index.index+startIndex+1}</td>
+			              		<td>${item.title}</td>
+			              		<td>${item.requestUserName}</td>
+			              		<td>${item.requestDate }</td>
+			              		<td><a href="personal/perform?taskID=${item.taskID}">审批</a></td>
+		              		</c:forEach>
+		              	</c:if>
+		              </tbody>
+           			</table>
+			  	</div>
+			  	<div class="dropdown" style="margin-top:25px;">
+		           	<label>每页显示数量：</label>
+		           	<button class="btn btn-default dropdown-toggle" type="button" id="dropdownMenu1" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
+		           		${limit}
+		           		<span class="caret"></span>
+		           	</button>
+		           	<ul class="dropdown-menu" aria-labelledby="dropdownMenu1" style="left:104px;min-width:120px;">
+					    <li><a class="dropdown-item-20" href="#">20</a></li>
+					    <li><a class="dropdown-item-50" href="#">50</a></li>
+					    <li><a class="dropdown-item-100" href="#">100</a></li>
+				    </ul>
+		           	<input type="hidden" id="page" value="${page}"/>
+		           	<input type="hidden" id="limit" value="${limit}" />
+		           	<input type="hidden" id="totalPage" value="${totalPage }" />
+		        </div>
+		        <%@include file="/includes/pager.jsp" %>
+			  </div>
+			  <div role="tabpanel" class="tab-pane" id="carveChop">
+			  	<div class="table-responsive" style="margin-top:30px;">
+			  		<table class="table table-striped">
+		              <thead>
+		                <tr>
+		                  <th>序号</th>
+		                  <th>标题</th>
+		                  <th>发起人</th>
+		                  <th>发起时间</th>
+		                  <th>操作</th>
+		                </tr>
+		              </thead>
+              		  <tbody>
+		              	<c:if test="${not empty carveChopTaskVos}">
+		              	<c:set var="startIndex" value="${(page-1)*limit }"></c:set>
+		              		<c:forEach items="${carveChopTaskVos}" var= "item"  varStatus="index" >
+		              		<tr>
+			              		<td>${index.index+startIndex+1}</td>
+			              		<td>${item.title}</td>
+			              		<td>${item.requestUserName}</td>
+			              		<td>${item.requestDate }</td>
+			              		<td><a href="personal/perform?taskID=${item.taskID}">审批</a></td>
+		              		</c:forEach>
+		              	</c:if>
+		              </tbody>
+           			</table>
+			  	</div>
+			  	<div class="dropdown" style="margin-top:25px;">
+		           	<label>每页显示数量：</label>
+		           	<button class="btn btn-default dropdown-toggle" type="button" id="dropdownMenu1" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
+		           		${limit}
+		           		<span class="caret"></span>
+		           	</button>
+		           	<ul class="dropdown-menu" aria-labelledby="dropdownMenu1" style="left:104px;min-width:120px;">
+					    <li><a class="dropdown-item-20" href="#">20</a></li>
+					    <li><a class="dropdown-item-50" href="#">50</a></li>
+					    <li><a class="dropdown-item-100" href="#">100</a></li>
+				    </ul>
+		           	<input type="hidden" id="page" value="${page}"/>
+		           	<input type="hidden" id="limit" value="${limit}" />
+		           	<input type="hidden" id="totalPage" value="${totalPage }" />
+		        </div>
+		        <%@include file="/includes/pager.jsp" %>
+			  </div>
+			   <div role="tabpanel" class="tab-pane" id="purchaseProperty">
+			  	<div class="table-responsive" style="margin-top:30px;">
+			  		<table class="table table-striped">
+		              <thead>
+		                <tr>
+		                  <th>序号</th>
+		                  <th>标题</th>
+		                  <th>发起人</th>
+		                  <th>发起时间</th>
+		                  <th>操作</th>
+		                </tr>
+		              </thead>
+              		  <tbody>
+		              	<c:if test="${not empty purchasePropertyTaskVos}">
+		              	<c:set var="startIndex" value="${(page-1)*limit }"></c:set>
+		              		<c:forEach items="${purchasePropertyTaskVos}" var= "item"  varStatus="index" >
+		              		<tr>
+			              		<td>${index.index+startIndex+1}</td>
+			              		<td>${item.title}</td>
+			              		<td>${item.requestUserName}</td>
+			              		<td>${item.requestDate }</td>
+			              		<td><a href="personal/perform?taskID=${item.taskID}">审批</a></td>
+		              		</c:forEach>
+		              	</c:if>
+		              </tbody>
+           			</table>
+			  	</div>
+			  	<div class="dropdown" style="margin-top:25px;">
+		           	<label>每页显示数量：</label>
+		           	<button class="btn btn-default dropdown-toggle" type="button" id="dropdownMenu1" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
+		           		${limit}
+		           		<span class="caret"></span>
+		           	</button>
+		           	<ul class="dropdown-menu" aria-labelledby="dropdownMenu1" style="left:104px;min-width:120px;">
+					    <li><a class="dropdown-item-20" href="#">20</a></li>
+					    <li><a class="dropdown-item-50" href="#">50</a></li>
+					    <li><a class="dropdown-item-100" href="#">100</a></li>
+				    </ul>
+		           	<input type="hidden" id="page" value="${page}"/>
+		           	<input type="hidden" id="limit" value="${limit}" />
+		           	<input type="hidden" id="totalPage" value="${totalPage }" />
+		        </div>
+		        <%@include file="/includes/pager.jsp" %>
+			  </div>
+			  <div role="tabpanel" class="tab-pane" id="handleProperty">
+			  	<div class="table-responsive" style="margin-top:30px;">
+			  		<table class="table table-striped">
+		              <thead>
+		                <tr>
+		                  <th>序号</th>
+		                  <th>标题</th>
+		                  <th>发起人</th>
+		                  <th>发起时间</th>
+		                  <th>操作</th>
+		                </tr>
+		              </thead>
+              		  <tbody>
+		              	<c:if test="${not empty handlePropertyTaskVos}">
+		              	<c:set var="startIndex" value="${(page-1)*limit }"></c:set>
+		              		<c:forEach items="${handlePropertyTaskVos}" var= "item"  varStatus="index" >
+		              		<tr>
+			              		<td>${index.index+startIndex+1}</td>
+			              		<td>${item.title}</td>
+			              		<td>${item.requestUserName}</td>
+			              		<td>${item.requestDate }</td>
+			              		<td><a href="personal/perform?taskID=${item.taskID}">审批</a></td>
+		              		</c:forEach>
+		              	</c:if>
+		              </tbody>
+           			</table>
+			  	</div>
+			  	<div class="dropdown" style="margin-top:25px;">
+		           	<label>每页显示数量：</label>
+		           	<button class="btn btn-default dropdown-toggle" type="button" id="dropdownMenu1" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
+		           		${limit}
+		           		<span class="caret"></span>
+		           	</button>
+		           	<ul class="dropdown-menu" aria-labelledby="dropdownMenu1" style="left:104px;min-width:120px;">
+					    <li><a class="dropdown-item-20" href="#">20</a></li>
+					    <li><a class="dropdown-item-50" href="#">50</a></li>
+					    <li><a class="dropdown-item-100" href="#">100</a></li>
+				    </ul>
+		           	<input type="hidden" id="page" value="${page}"/>
+		           	<input type="hidden" id="limit" value="${limit}" />
+		           	<input type="hidden" id="totalPage" value="${totalPage }" />
+		        </div>
+		        <%@include file="/includes/pager.jsp" %>
+			  </div>
+			  <div role="tabpanel" class="tab-pane" id="transferProperty">
+			  	<div class="table-responsive" style="margin-top:30px;">
+			  		<table class="table table-striped">
+		              <thead>
+		                <tr>
+		                  <th>序号</th>
+		                  <th>标题</th>
+		                  <th>发起人</th>
+		                  <th>发起时间</th>
+		                  <th>操作</th>
+		                </tr>
+		              </thead>
+              		  <tbody>
+		              	<c:if test="${not empty transferPropertyTaskVos}">
+		              	<c:set var="startIndex" value="${(page-1)*limit }"></c:set>
+		              		<c:forEach items="${transferPropertyTaskVos}" var= "item"  varStatus="index" >
+		              		<tr>
+			              		<td>${index.index+startIndex+1}</td>
+			              		<td>${item.title}</td>
+			              		<td>${item.requestUserName}</td>
+			              		<td>${item.requestDate }</td>
+			              		<td><a href="personal/perform?taskID=${item.taskID}">审批</a></td>
+		              		</c:forEach>
+		              	</c:if>
+		              </tbody>
+           			</table>
+			  	</div>
+			  	<div class="dropdown" style="margin-top:25px;">
+		           	<label>每页显示数量：</label>
+		           	<button class="btn btn-default dropdown-toggle" type="button" id="dropdownMenu1" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
+		           		${limit}
+		           		<span class="caret"></span>
+		           	</button>
+		           	<ul class="dropdown-menu" aria-labelledby="dropdownMenu1" style="left:104px;min-width:120px;">
+					    <li><a class="dropdown-item-20" href="#">20</a></li>
+					    <li><a class="dropdown-item-50" href="#">50</a></li>
+					    <li><a class="dropdown-item-100" href="#">100</a></li>
+				    </ul>
+		           	<input type="hidden" id="page" value="${page}"/>
+		           	<input type="hidden" id="limit" value="${limit}" />
+		           	<input type="hidden" id="totalPage" value="${totalPage }" />
+		        </div>
+		        <%@include file="/includes/pager.jsp" %>
+			  </div>
+			  <div role="tabpanel" class="tab-pane" id="shopApply">
+			  	<div class="table-responsive" style="margin-top:30px;">
+			  		<table class="table table-striped">
+		              <thead>
+		                <tr>
+		                  <th class="">序号</th>
+		                  <th>标题</th>
+		                  <th>发起人</th>
+		                  <th>发起时间</th>
+		                  <th>平台</th>
+		                  <th>店铺名称</th>
+		                  <th>开店时间</th>
+		                  <th>操作</th>
+		                </tr>
+		              </thead>
+              		  <tbody>
+		              	<c:if test="${not empty shopApplyTaskVos}">
+		              	<c:set var="startIndex" value="${(page-1)*limit }"></c:set>
+		              		<c:forEach items="${shopApplyTaskVos}" var= "item"  varStatus="index" >
+		              		<tr>
+			              		<td>${index.index+startIndex+1}</td>
+			              		<td>${item.title}</td>
+			              		<td>${item.requestUserName}</td>
+			              		<td>${item.requestDate }</td>
+			              		<td>${item.platform }</td>
+			              		<td>${item.shopName }</td>
+			              		<td>${item.shopStartTime }</td>
+			              		<td><a href="personal/perform?taskID=${item.taskID}">审批</a></td>
+		              		</c:forEach>
+		              	</c:if>
+		              </tbody>
+           			</table>
+			  	</div>
+			  	<div class="dropdown" style="margin-top:25px;">
+		           	<label>每页显示数量：</label>
+		           	<button class="btn btn-default dropdown-toggle" type="button" id="dropdownMenu1" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
+		           		${limit}
+		           		<span class="caret"></span>
+		           	</button>
+		           	<ul class="dropdown-menu" aria-labelledby="dropdownMenu1" style="left:104px;min-width:120px;">
+					    <li><a class="dropdown-item-20" href="#">20</a></li>
+					    <li><a class="dropdown-item-50" href="#">50</a></li>
+					    <li><a class="dropdown-item-100" href="#">100</a></li>
+				    </ul>
+		           	<input type="hidden" id="page" value="${page}"/>
+		           	<input type="hidden" id="limit" value="${limit}" />
+		           	<input type="hidden" id="totalPage" value="${totalPage }" />
+		        </div>
+		        <%@include file="/includes/pager.jsp" %>
+			  </div>
+			  <div role="tabpanel" class="tab-pane" id="shopPayApply">
+			  	<div class="table-responsive" style="margin-top:30px;">
+			  		<table class="table table-striped">
+		              <thead>
+		                <tr>
+		                  <th class="">序号</th>
+		                  <th>标题</th>
+		                  <th>发起人</th>
+		                  <th>发起时间</th>
+		                  <th>操作</th>
+		                </tr>
+		              </thead>
+              		  <tbody>
+		              	<c:if test="${not empty shopPayApplyTaskVos}">
+		              	<c:set var="startIndex" value="${(page-1)*limit }"></c:set>
+		              		<c:forEach items="${shopPayApplyTaskVos}" var= "item"  varStatus="index" >
+		              		<tr>
+			              		<td>${index.index+startIndex+1}</td>
+			              		<td>${item.title}</td>
+			              		<td>${item.requestUserName}</td>
+			              		<td>${item.requestDate }</td>
+			              		<td><a href="personal/perform?taskID=${item.taskID}">审批</a></td>
+		              		</c:forEach>
+		              	</c:if>
+		              </tbody>
+           			</table>
+			  	</div>
+			  	<div class="dropdown" style="margin-top:25px;">
+		           	<label>每页显示数量：</label>
+		           	<button class="btn btn-default dropdown-toggle" type="button" id="dropdownMenu1" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
+		           		${limit}
+		           		<span class="caret"></span>
+		           	</button>
+		           	<ul class="dropdown-menu" aria-labelledby="dropdownMenu1" style="left:104px;min-width:120px;">
+					    <li><a class="dropdown-item-20" href="#">20</a></li>
+					    <li><a class="dropdown-item-50" href="#">50</a></li>
+					    <li><a class="dropdown-item-100" href="#">100</a></li>
+				    </ul>
+		           	<input type="hidden" id="page" value="${page}"/>
+		           	<input type="hidden" id="limit" value="${limit}" />
+		           	<input type="hidden" id="totalPage" value="${totalPage }" />
+		        </div>
+		        <%@include file="/includes/pager.jsp" %>
+			  </div>
+			  <div role="tabpanel" class="tab-pane" id="workOvertime">
+			  	<div class="table-responsive" style="margin-top:30px;">
+			  		<table class="table table-striped">
+		              <thead>
+		                <tr>
+		                  <th style="width:5%">序号</th>
+		                  <th style="width:7%">加班人员</th>
+		                  <th style="width:15%">所属部门</th>
+		                  <th style="width:10%">开始时间</th>
+		                  <th style="width:10%">结束时间</th>
+		                  <th style="width:10%">预计加班工时</th>
+		                  <th style="width:15%">加班原因</th>
+		                  <th style="width:15%">发起时间</th>
+		                  <th>操作</th>
+		                </tr>
+		              </thead>
+              		  <tbody>
+		              	<c:if test="${not empty workOvertimeTaskVos}">
+		              	<c:set var="startIndex" value="${(page-1)*limit }"></c:set>
+		              		<c:forEach items="${workOvertimeTaskVos}" var= "item"  varStatus="index" >
+		              		<tr>
+			              		<td>${index.index+startIndex+1}</td>
+			              		<td>${item.requestUserName}</td>
+			              		<td>${item.department}</td>
+			              		<td>${item.beginDate}</td>
+			              		<td>${item.endDate}</td>
+			              		<td>${item.workHours}</td>
+			              		<td>${item.reason}</td>
+			              		<td>${item.requestDate}</td>
+          				             <td>
+          				               <a href="personal/taskComplete?taskID=${item.taskID}&result=1&businessType=加班申请">同意</a> |
+         							   <a href="personal/taskComplete?taskID=${item.taskID}&result=2&businessType=加班申请">不同意</a>
+         							   <br/><a href="personal/processHistory?processInstanceID=${item.processInstanceID}&selectedPanel=findTaskList">查看已审批环节</a>
+         							 </td>
+         					 </tr>
+		              		</c:forEach>
+		              	</c:if>
+		              </tbody>
+           			</table>
+			  	</div>
+			  	<div class="dropdown" style="margin-top:25px;">
+		           	<label>每页显示数量：</label>
+		           	<button class="btn btn-default dropdown-toggle" type="button" id="dropdownMenu1" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
+		           		${limit}
+		           		<span class="caret"></span>
+		           	</button>
+		           	<ul class="dropdown-menu" aria-labelledby="dropdownMenu1" style="left:104px;min-width:120px;">
+					    <li><a class="dropdown-item-20" href="#">20</a></li>
+					    <li><a class="dropdown-item-50" href="#">50</a></li>
+					    <li><a class="dropdown-item-100" href="#">100</a></li>
+				    </ul>
+		           	<input type="hidden" id="page" value="${page}"/>
+		           	<input type="hidden" id="limit" value="${limit}" />
+		           	<input type="hidden" id="totalPage" value="${totalPage }" />
+		        </div>
+		        <%@include file="/includes/pager.jsp" %>
+			  </div>
+			  <div role="tabpanel" class="tab-pane" id="carUse">
+			  	<div class="table-responsive" style="margin-top:30px;">
+			  		<table class="table table-striped">
+		              <thead>
+		                <tr>
+		                  <th>序号</th>
+		                  <th>标题</th>
+		                  <th>发起人</th>
+		                  <th>发起时间</th>
+		                  <th>操作</th>
+		                </tr>
+		              </thead>
+              		  <tbody>
+		              	<c:if test="${not empty carUseTaskVos}">
+		              	<c:set var="startIndex" value="${(page-1)*limit }"></c:set>
+		              		<c:forEach items="${carUseTaskVos}" var= "item"  varStatus="index" >
+		              		<tr>
+			              		<td>${index.index+startIndex+1}</td>
+			              		<td>${item.title}</td>
+			              		<td>${item.requestUserName}</td>
+			              		<td>${item.requestDate }</td>
+			              		<td class="col-sm-3"><a href="personal/perform?taskID=${item.taskID}">审批</a></td>
+		              		</c:forEach>
+		              	</c:if>
+		              </tbody>
+           			</table>
+			  	</div>
+			  	<div class="dropdown" style="margin-top:25px;">
+		           	<label>每页显示数量：</label>
+		           	<button class="btn btn-default dropdown-toggle" type="button" id="dropdownMenu1" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
+		           		${limit}
+		           		<span class="caret"></span>
+		           	</button>
+		           	<ul class="dropdown-menu" aria-labelledby="dropdownMenu1" style="left:104px;min-width:120px;">
+					    <li><a class="dropdown-item-20" href="#">20</a></li>
+					    <li><a class="dropdown-item-50" href="#">50</a></li>
+					    <li><a class="dropdown-item-100" href="#">100</a></li>
+				    </ul>
+		           	<input type="hidden" id="page" value="${page}"/>
+		           	<input type="hidden" id="limit" value="${limit}" />
+		           	<input type="hidden" id="totalPage" value="${totalPage }" />
+		        </div>
+		        <%@include file="/includes/pager.jsp" %>
+			  </div>
+			  
+			  
+		   <div role="tabpanel" class="tab-pane" id="vitae">
+			  	<div class="table-responsive" style="margin-top:30px;">
+			  		<table class="table table-striped">
+		              <thead>
+		                <tr>
+		                   <th>序号</th>
+		                  <th>标题</th>
+		                  <th>发起人</th>
+		                  <th>发起时间</th>
+		                  <th>操作</th>
+		                </tr>
+		              </thead>
+              		  <tbody>
+		              	<c:if test="${not empty vitaeTasksVos}">
+		              	<s:set name="task_id" value="(#request.page-1)*(#request.limit)"></s:set>
+		              	<s:iterator id="taskVO" value="#request.vitaeTasksVos" status="count">
+		              		<tr>
+		              			<td class="col-sm-1"><s:property value="#task_id+1"/></td>
+		              			<td class="col-sm-2">【<s:property value="#taskVO.taskName"/>】<s:property value="#taskVO.title"/></td>
+		              			<td class="col-sm-1"><s:property value="#taskVO.requestUserName"/></td>
+		              			<td class="col-sm-2"><s:property value="#taskVO.requestDate"/></td>
+		              			<td class="col-sm-1"><a href="/HR/vitae/toConfirmVitae?taskID=<s:property value='#taskVO.taskID' />"><s:if test="#request.taskDefKey == 'updateAccount'">办理</s:if><s:else>审批</s:else></a></td>
+		              		</tr>
+		              		<s:set name="task_id" value="#task_id+1"></s:set>
+		              	</s:iterator>
+		              	</c:if>
+		              </tbody>
+           			</table>
+			  	</div>
+			  	<div class="dropdown" style="margin-top:25px;">
+		           	<label>每页显示数量：</label>
+		           	<button class="btn btn-default dropdown-toggle" type="button" id="dropdownMenu1" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
+		           		${limit}
+		           		<span class="caret"></span>
+		           	</button>
+		           	<ul class="dropdown-menu" aria-labelledby="dropdownMenu1" style="left:104px;min-width:120px;">
+					    <li><a class="dropdown-item-20" href="#">20</a></li>
+					    <li><a class="dropdown-item-50" href="#">50</a></li>
+					    <li><a class="dropdown-item-100" href="#">100</a></li>
+				    </ul>
+		           	<input type="hidden" id="page" value="${page}"/>
+		           	<input type="hidden" id="limit" value="${limit}" />
+		           	<input type="hidden" id="totalPage" value="${totalPage }" />
+		        </div>
+		        <%@include file="/includes/pager.jsp" %>
+			  </div>
+			  
+			   <div role="tabpanel" class="tab-pane" id="commonSubject">
+			  	<div class="table-responsive" style="margin-top:30px;">
+			  		<table class="table table-striped">
+		              <thead>
+		                <tr>
+		                   <th>序号</th>
+		                  <th>标题</th>
+		                  <th>发起人</th>
+		                  <th>内容标题</th>
+		                  <th>类别</th>
+		                  <th>流通方式</th>
+		                  <th>发起时间</th>
+		                  <th>操作</th>
+		                </tr>
+		              </thead>
+              		  <tbody>
+		              	<c:if test="${not empty commonSubjectVos}">
+		              	<s:set name="task_id" value="(#request.page-1)*(#request.limit)"></s:set>
+		              	<s:iterator id="taskVO" value="#request.commonSubjectVos" status="count">
+		              		<tr>
+		              			<td class="col-sm-1"><s:property value="#task_id+1"/></td>
+		              			<td class="col-sm-2">【<s:property value="#taskVO.taskName"/>】<s:property value="#taskVO.title"/></td>
+		              			<td class="col-sm-1"><s:property value="#taskVO.requestUserName"/></td>
+		              			<td class="col-sm-1"><s:property value="#taskVO.title_"/></td>
+		              			<td class="col-sm-1"><s:property value="#taskVO.type"/></td>
+		              			<td class="col-sm-1"><s:property value="#taskVO.route"/></td>
+		              			<td class="col-sm-2"><s:property value="#taskVO.requestDate"/></td>
+		              			<td class="col-sm-1"><a href="/personal/tablePerform?taskID=<s:property value='#taskVO.taskID' />">
+		              			<c:if test="${taskVO.type eq '告知'}"> 查看告知</c:if>
+		              			
+		              			<c:if test="${taskVO.type eq '审批'}"> 审批</c:if>
+		              			</a></td>
+		              		</tr>
+		              		<s:set name="task_id" value="#task_id+1"></s:set>
+		              	</s:iterator>
+		              	</c:if>
+		              </tbody>
+           			</table>
+			  	</div>
+			  	<div class="dropdown" style="margin-top:25px;">
+		           	<label>每页显示数量：</label>
+		           	<button class="btn btn-default dropdown-toggle" type="button" id="dropdownMenu1" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
+		           		${limit}
+		           		<span class="caret"></span>
+		           	</button>
+		           	<ul class="dropdown-menu" aria-labelledby="dropdownMenu1" style="left:104px;min-width:120px;">
+					    <li><a class="dropdown-item-20" href="#">20</a></li>
+					    <li><a class="dropdown-item-50" href="#">50</a></li>
+					    <li><a class="dropdown-item-100" href="#">100</a></li>
+				    </ul>
+		           	<input type="hidden" id="page" value="${page}"/>
+		           	<input type="hidden" id="limit" value="${limit}" />
+		           	<input type="hidden" id="totalPage" value="${totalPage }" />
+		        </div>
+		        <%@include file="/includes/pager.jsp" %>
+			  </div>
+			   <div role="tabpanel" class="tab-pane" id="softPerformance">
+			  	<div class="table-responsive" style="margin-top:30px;">
+			  		<table class="table table-striped">
+		              <thead>
+		                <tr>
+		                  <th>序号</th>
+		                  <th>标题</th>
+		                  <th>发起人</th>
+		                  <th>所属项目</th>
+		                  <th>版本</th>
+		                  <th>模块</th>
+		                  <th>分值</th>
+		                  <th>截止时间</th>
+		                  <th>发起时间</th>
+		                  <th>操作</th>
+		                </tr>
+		              </thead>
+              		  <tbody>
+		              	<c:if test="${not empty softPerformacneVos}">
+		              	<s:set name="task_id" value="(#request.page-1)*(#request.limit)"></s:set>
+		              	<s:iterator id="taskVO" value="#request.softPerformacneVos" status="count">
+		              		<tr>
+		              			<td class="col-sm-1"><s:property value="#task_id+1"/></td>
+		              			<td class="col-sm-2">【<s:property value="#taskVO.taskName"/>】<s:property value="#taskVO.title"/></td>
+		              			<td class="col-sm-2"><s:property value="#taskVO.requestUserName"/></td>
+		              			<td class="col-sm-1"><s:property value="#taskVO.projectName"/></td>
+		              			<td class="col-sm-1"><s:property value="#taskVO.versionName"/></td>
+		              			<td class="col-sm-1"><s:property value="#taskVO.moduleName"/></td>
+		              			<td class="col-sm-1"><s:property value="#taskVO.score"/></td>
+		              			<td class="col-sm-1"><s:property value="#taskVO.limitTime"/></td>
+		              			<td class="col-sm-1"><s:property value="#taskVO.requestDate"/></td>
+		              			<td class="col-sm-1"><a href="/personal/tablePerform?taskID=<s:property value='#taskVO.taskID' />">办理</a></td>
+		              		</tr>
+		              		<s:set name="task_id" value="#task_id+1"></s:set>
+		              	</s:iterator>
+		              	</c:if>
+		              </tbody>
+           			</table>
+			  	</div>
+			  	<div class="dropdown" style="margin-top:25px;">
+		           	<label>每页显示数量：</label>
+		           	<button class="btn btn-default dropdown-toggle" type="button" id="dropdownMenu1" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
+		           		${limit}
+		           		<span class="caret"></span>
+		           	</button>
+		           	<ul class="dropdown-menu" aria-labelledby="dropdownMenu1" style="left:104px;min-width:120px;">
+					    <li><a class="dropdown-item-20" href="#">20</a></li>
+					    <li><a class="dropdown-item-50" href="#">50</a></li>
+					    <li><a class="dropdown-item-100" href="#">100</a></li>
+				    </ul>
+		           	<input type="hidden" id="page" value="${page}"/>
+		           	<input type="hidden" id="limit" value="${limit}" />
+		           	<input type="hidden" id="totalPage" value="${totalPage }" />
+		        </div>
+		        <%@include file="/includes/pager.jsp" %>
+			  </div>
+			  
+			  
+			   <div role="tabpanel" class="tab-pane" id="advance">
+		  
+		    <form  class="form-horizontal" action="/personal/findTaskList?">
+          	<input style="display:none" name="type" value="15"/>
+			<div class="form-group" style="margin-top:10px">
+				<label for="beginDate" class="col-sm-1 control-label">预付单号</label>
+				<div class="col-sm-2">
+			    	<input type="text" class="form-control" id="No_code" name="No_code" value="${No_code}"  placeholder="预付编号">
+			    </div>
+			    <label class="col-sm-1 control-label">发起人</label>
+				<div class="col-sm-2">
+			    	<input type="text" class="form-control" name="applyerNameForAdvance" value="${applyerNameForAdvance}" onblur="checkEmptyForAdvance()" autoComplete="off" id="applyerForAdvance">
+			    	<input name="applyerIdForAdvance" type="hidden" value="${applyerIdForAdvance}"/>
+			    </div>
+			    <label for="beginDate" class="col-sm-1 control-label">发起时间</label>
+			    <div class="col-sm-2">
+			    	<input type="text" class="form-control" id="beginDate" name="startTime" value="${startTime}" onclick="WdatePicker({maxDate:'%y-%M-%d'})" placeholder="开始时间">
+			    </div>
+			    <div class="col-sm-2">
+			    	<input type="text" class="form-control" id="endDate" name="endTime" value="${endTime }" onclick="WdatePicker({maxDate:'%y-%M-%d'})" placeholder="结束时间">
+			    </div>
+			    <div class="col-sm-1">
+			    <button type="submit"  class="btn btn-primary"  >查询</button>
+			    </div>
+			</div>
+          </form>
+			  	<div class="table-responsive" style="margin-top:30px;">
+			  		<table class="table table-striped">
+		              <thead>
+		                <tr>
+		                  <th>序号</th>
+		                  <th>标题</th>
+		                  <th>预付单号</th>
+                 		  <th>合计金额</th>
+		                  <th>发起人</th>
+		                  <th>发起时间</th>
+		                  <th>操作</th>
+		                </tr>
+		              </thead>
+              		  <tbody>
+		              	<c:if test="${not empty taskVOs}">
+		              	<s:set name="task_id" value="(#request.page-1)*(#request.limit)"></s:set>
+		              	<s:iterator id="taskVO" value="#request.taskVOs" status="count">
+		              		<tr>
+		              			<td class="col-sm-1"><s:property value="#task_id+1"/></td>
+		              			<td class="col-sm-2">【<s:property value="#taskVO.taskName"/>】<s:property value="#taskVO.title"/></td>
+		              			<td class="col-sm-2"><s:property value="#taskVO.reimbursementNo"/></td>
+              					<td class="col-sm-2"><s:property value="#taskVO.totalAmount" /></td>
+		              			<td class="col-sm-1"><s:property value="#taskVO.requestUserName"/></td>
+		              			<td class="col-sm-2"><s:property value="#taskVO.requestDate"/></td>
+		              			<td class="col-sm-1"><a href="personal/auditAdvance?taskID=<s:property value='#taskVO.taskID' />"><s:if test="#request.taskDefKey == 'updateAccount'">办理</s:if><s:else>审批</s:else></a></td>
+		              		</tr>
+		              		<s:set name="task_id" value="#task_id+1"></s:set>
+		              	</s:iterator>
+		              	</c:if>
+		              </tbody>
+           			</table>
+			  	</div>
+			  	<div class="dropdown" style="margin-top:25px;">
+		           	<label>每页显示数量：</label>
+		           	<button class="btn btn-default dropdown-toggle" type="button" id="dropdownMenu1" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
+		           		${limit}
+		           		<span class="caret"></span>
+		           	</button>
+		           	<ul class="dropdown-menu" aria-labelledby="dropdownMenu1" style="left:104px;min-width:120px;">
+					    <li><a class="dropdown-item-20" href="#">20</a></li>
+					    <li><a class="dropdown-item-50" href="#">50</a></li>
+					    <li><a class="dropdown-item-100" href="#">100</a></li>
+				    </ul>
+		           	<input type="hidden" id="page" value="${page}"/>
+		           	<input type="hidden" id="limit" value="${limit}" />
+		           	<input type="hidden" id="totalPage" value="${totalPage }" />
+		        </div>
+		        <%@include file="/includes/pager.jsp" %>
+			  </div>
+			  
+		  </div>
+          
+		  </div>
+        </div>
+      </div>
+      <script>
+      if(localStorage.isRefresh==1){
+    	  localStorage.isRefresh=null;
+    	  location.reload();
+      }
+      require(['staffComplete'],function (staffComplete){
+  		new staffComplete().render($('#applyer'),function ($item){
+  			$("input[name='applyerId']").val($item.data("userId"));
+  		});
+  		new staffComplete().render($('#applyerForAdvance'),function ($item){
+  			$("input[name='applyerIdForAdvance']").val($item.data("userId"));
+  		});
+  	  });
+	   	function checkEmpty(){
+	   		if($("#applyer").val()==''){
+	   			$("input[name='applyerId']").val('');
+	   		}
+	   	}
+	   	function checkEmptyForAdvance(){
+	   		if($("#applyerForAdvance").val()==''){
+	   			$("input[name='applyerIdForAdvance']").val('');
+	   		}
+	   	}
+		$(document).click(function (event) {
+			if ($("input[name='applyerIdForAdvance']").val()=='')
+			{
+				$("#applyerForAdvance").val("");
+			}
+			if ($("input[name='applyerId']").val()=='')
+			{
+				$("#applyer").val("");
+			}
+		});
+      </script>
+  </body>
+</html>

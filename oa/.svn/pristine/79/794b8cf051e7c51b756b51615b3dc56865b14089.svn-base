@@ -1,0 +1,5 @@
+package com.zhizaolian.staff.service;
+
+public interface PerformanceService {
+
+}

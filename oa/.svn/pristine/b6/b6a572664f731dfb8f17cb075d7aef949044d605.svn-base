@@ -1,0 +1,64 @@
+package com.zhizaolian.staff.entity;
+
+import java.util.Date;
+
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.Id;
+import javax.persistence.Table;
+
+import lombok.Data;
+@Data
+@Entity
+@Table(name="OA_PerformanceStaffCheckItem")
+public class PerformanceStaffCheckItemEntity {
+	@Id
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	@Column(unique = true)
+	private Integer id;
+	
+	private String userId;
+	
+	/**
+	 * 考核项目表id
+	 */
+	private Integer projectId;
+	/**
+	 * 考核项目
+	 */
+	private String checkItem;
+	/**
+	 * 数据指标
+	 */
+	private String dataTarget;
+	/**
+	 * 考核条件，值：无、>、>=、<、<=
+	 */
+	private String[] checkCondition;
+	/**
+	 * 指标算法
+	 */
+	private String[] calculation;
+	
+	private double coefficient;
+	/**
+	 * 目标值
+	 */
+	private double targetValue;
+	/**
+	 * 实际完成值
+	 */
+	private double actualValue;
+	
+	private Integer year;
+	
+	private Integer month;
+	
+	private Integer isDeleted = 0;
+	
+	private Date addTime;
+	
+	private Date updateTime;
+}

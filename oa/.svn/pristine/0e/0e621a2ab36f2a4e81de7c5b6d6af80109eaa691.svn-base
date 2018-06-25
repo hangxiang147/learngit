@@ -1,0 +1,221 @@
+package com.zhizaolian.staff.service.impl;
+
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+
+import com.zhizaolian.staff.dao.TrainDao;
+import com.zhizaolian.staff.entity.TrainEntity;
+import com.zhizaolian.staff.entity.TrainParticipantEntity;
+import com.zhizaolian.staff.enums.IsDeletedEnum;
+import com.zhizaolian.staff.service.StaffService;
+import com.zhizaolian.staff.service.TrainService;
+import com.zhizaolian.staff.transformer.TrainVOTransformer;
+import com.zhizaolian.staff.utils.DateUtil;
+import com.zhizaolian.staff.utils.ListResult;
+import com.zhizaolian.staff.vo.StaffVO;
+import com.zhizaolian.staff.vo.TrainParticipantVO;
+import com.zhizaolian.staff.vo.TrainVO;
+
+
+public class TrainServiceImpl implements TrainService {
+	
+	@Autowired
+	private StaffService staffService;
+	
+	@Autowired	
+	private TrainDao trainDao;
+	
+	/* 
+	 * 增加培训记录
+	 * 
+	 */
+	@Override
+	public Integer addRecord(TrainVO trainVO) {
+		Date now = new Date();
+
+		TrainEntity trainEntity=new TrainEntity();
+				trainEntity.setStartTime(DateUtil.getFullDate(trainVO.getStartTime()));
+				trainEntity.setEndTime(DateUtil.getFullDate(trainVO.getEndTime()));
+				trainEntity.setContent(trainVO.getContent());
+				trainEntity.setPlace(trainVO.getPlace());
+				trainEntity.setLector(trainVO.getLector());
+				trainEntity.setPID(trainVO.getPID());
+				
+				trainEntity.setTopic(trainVO.getTopic());
+				trainEntity.setTrainID(trainVO.getTrainID());
+				trainEntity.setIsDeleted(IsDeletedEnum.NOT_DELETED.getValue());
+				trainEntity.setAddTime(now);
+				trainEntity.setUpdateTime(now);
+		//TrainParticipantEntity trainParticipantEntity=new TrainParticipantEntity();
+		int trainID=trainDao.save(trainEntity);
+		if(trainVO.getParticipantIDs()!=null){
+			for(String participantID:trainVO.getParticipantIDs()){
+				TrainParticipantEntity trainParticipantEntity=new TrainParticipantEntity();
+				trainParticipantEntity.setTrainID(trainID);
+				trainParticipantEntity.setUserID(participantID);
+				trainParticipantEntity.setIsDeleted(IsDeletedEnum.NOT_DELETED.getValue());
+				trainParticipantEntity.setAddTime(now);
+				trainParticipantEntity.setUpdateTime(now);
+				trainDao.save(trainParticipantEntity);
+			}
+		}
+		return trainID;
+	}
+	/*
+	 * 增加培训员工
+	 * 没用
+	 */
+	@Override
+	public void addTrainParticipant(TrainParticipantVO trainParticipantVO) {
+		Date now = new Date();
+		TrainParticipantEntity trainParticipantEntity=new TrainParticipantEntity();
+		trainParticipantEntity.setID(trainParticipantVO.getID());
+		trainParticipantEntity.setTrainID(trainParticipantVO.getTrainID());
+		trainParticipantEntity.setUserID(trainParticipantVO.getUserID());
+		trainParticipantEntity.setIsDeleted(IsDeletedEnum.NOT_DELETED.getValue());
+		trainParticipantEntity.setAddTime(now);
+		trainParticipantEntity.setUpdateTime(now);
+													  
+		trainDao.save(trainParticipantEntity);
+	}
+	/*
+	 * 更新培训记录
+	 * 
+	 */
+	@Override
+	public void updateRecord(TrainVO trainVO, Integer trainID) {
+		Date now = new Date();
+		TrainEntity trainEntity=trainDao.getTrainByID(trainID);
+		trainEntity.setStartTime(DateUtil.getFullDate(trainVO.getStartTime()));
+		trainEntity.setEndTime(DateUtil.getFullDate(trainVO.getEndTime()));
+		trainEntity.setContent(trainVO.getContent());
+		trainEntity.setPlace(trainVO.getPlace());
+		trainEntity.setLector(trainVO.getLector());
+		trainEntity.setPID(trainVO.getPID());
+		
+		trainEntity.setTopic(trainVO.getTopic());
+		trainEntity.setTrainID(trainVO.getTrainID());
+		trainEntity.setIsDeleted(IsDeletedEnum.NOT_DELETED.getValue());
+		trainEntity.setAddTime(new Date());
+		trainEntity.setUpdateTime(new Date());
+		trainDao.save(trainEntity);
+		List<TrainParticipantEntity> list=trainDao.findTrainParticipantEntityByTrainID(trainVO.getTrainID());
+		if(CollectionUtils.isNotEmpty(list)){
+			for (TrainParticipantEntity trainParticipantEntity : list) {
+				trainDao.deleteParticipant(trainParticipantEntity);
+			}
+		}
+		if(trainVO.getParticipantIDs()!=null){
+			for(String participantID:trainVO.getParticipantIDs()){
+				TrainParticipantEntity trainParticipantEntity=new TrainParticipantEntity();
+				trainParticipantEntity.setTrainID(trainID);
+				trainParticipantEntity.setUserID(participantID);
+				trainParticipantEntity.setIsDeleted(IsDeletedEnum.NOT_DELETED.getValue());
+				trainParticipantEntity.setAddTime(now);
+				trainParticipantEntity.setUpdateTime(now);
+				trainDao.save(trainParticipantEntity);
+			}
+		}
+	}
+
+	
+	/*
+	 * 删除员工
+	 * 
+	 */
+	public void deleteParticipant(Integer trainID,String userID) {
+		TrainParticipantEntity trainParticipantEntity=trainDao.getParticipantByID(trainID,userID);
+		trainDao.deleteParticipant(trainParticipantEntity);
+	}
+	/*
+	 * 查询培训列表
+	 * 
+	 */
+
+	@Override
+	public ListResult<TrainVO> findTrainList(TrainVO trainVO1, int page, int limit) {
+		
+		ListResult<TrainEntity> trainlist=trainDao.findTrainList(getQuerySqlByTrainVO(trainVO1),getQueryCountSqlByTrainVO(trainVO1),page, limit);
+		List<TrainVO> list=new ArrayList<TrainVO>();
+		for(TrainEntity trainEntity:trainlist.getList()){
+			TrainVO trainVO=new TrainVO();
+			trainVO=TrainVOTransformer.entityToVO(trainEntity);
+			List<TrainParticipantEntity> trainParticipantEntities=trainDao.findTrainParticipantEntityByTrainID(trainVO.getTrainID());
+			List<StaffVO> staffVOs=new ArrayList<>();
+			for(TrainParticipantEntity trainParticipantEntity:trainParticipantEntities){
+				StaffVO staffVO=staffService.getStaffByUserID(trainParticipantEntity.getUserID());
+				staffVOs.add(staffVO);
+			}
+			trainVO.setStaffs(staffVOs);
+			list.add(trainVO);
+		}
+		return new ListResult<TrainVO>(list,trainlist.getTotalCount());
+	}
+	
+	
+	/*
+	 * 根据trainid查询培训记录
+	 * 
+	 */
+	@Override
+	public TrainVO getTrainByID(Integer trainID) {
+		TrainEntity trainEntity=trainDao.getTrainByID(trainID);
+		TrainVO trainVO=new TrainVO();
+		trainVO=TrainVOTransformer.entityToVO(trainEntity);
+		List<TrainParticipantEntity> trainParticipantEntities=trainDao.findTrainParticipantEntityByTrainID(trainVO.getTrainID());
+		List<StaffVO> staffVOs=new ArrayList<StaffVO>();
+		for(TrainParticipantEntity trainParticipantEntity:trainParticipantEntities){
+			StaffVO staffVO=staffService.getStaffByUserID(trainParticipantEntity.getUserID());
+			staffVOs.add(staffVO);
+		}
+		trainVO.setStaffs(staffVOs);
+		
+		return trainVO;
+	}
+	@Override
+	public void deleteTrain(Integer trainID) {
+		TrainEntity trainEntity=trainDao.getTrainByID(trainID);
+		trainDao.deleteTrain(trainEntity);
+		List<TrainParticipantEntity> trainParticipantEntities=trainDao.findTrainParticipantEntityByTrainID(trainID);
+		for(TrainParticipantEntity trainParticipantEntity:trainParticipantEntities){
+			trainDao.deleteParticipant(trainParticipantEntity);
+		}
+
+	}
+	private String getQuerySqlByTrainVO(TrainVO trainVO){
+		StringBuffer hql=new StringBuffer("FROM TrainEntity train WHERE train.isDeleted = 0");
+		hql.append(getWhereByTrainVO(trainVO));
+		return hql.toString();
+		
+	}
+	private String getWhereByTrainVO(TrainVO trainVO){
+		StringBuffer whereSql=new StringBuffer();
+	    if (!StringUtils.isBlank(trainVO.getStartTime())) {
+			whereSql.append(" and train.startTime >= '"+trainVO.getStartTime()+"'");
+		}
+		if (!StringUtils.isBlank(trainVO.getEndTime())) {
+			whereSql.append(" and train.startTime <= '"+trainVO.getEndTime()+"'");
+		}
+		if (!StringUtils.isBlank(trainVO.getLector())) {
+			whereSql.append(" and train.lector like '%"+trainVO.getLector()+"%' ");
+		}
+		if (!StringUtils.isBlank(trainVO.getTopic())) {
+			whereSql.append(" and train.topic like '%"+trainVO.getTopic()+"%' ");
+		}
+		return whereSql.toString();
+	}
+	private String getQueryCountSqlByTrainVO(TrainVO trainVO){
+		StringBuffer hql=new StringBuffer("SELECT COUNT(*) FROM TrainEntity train WHERE train.isDeleted = 0");
+		hql.append(getWhereByTrainVO(trainVO));
+		return hql.toString();
+		
+	}
+	
+
+
+}

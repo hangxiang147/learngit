@@ -1,0 +1,87 @@
+package com.zhizaolian.staff.service.impl;
+
+import java.util.Date;
+import java.util.List;
+
+import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+
+import com.zhizaolian.staff.dao.BaseDao;
+import com.zhizaolian.staff.entity.VehicleInfoEntity;
+import com.zhizaolian.staff.service.VehicleService;
+import com.zhizaolian.staff.utils.EscapeUtil;
+import com.zhizaolian.staff.utils.ListResult;
+import com.zhizaolian.staff.utils.ObjectByteArrTransformer;
+import com.zhizaolian.staff.vo.InsuranceRecord;
+import com.zhizaolian.staff.vo.MaintainRecord;
+import com.zhizaolian.staff.vo.RepairRecordVo;
+import com.zhizaolian.staff.vo.VehicleUseRecord;
+import com.zhizaolian.staff.vo.YearlyInspectionVo;
+
+public class VehicleServiceImpl implements VehicleService {
+	@Autowired
+	private BaseDao baseDao;
+	@Override
+	public void saveVehicle(VehicleInfoEntity vehicleVo) {
+		vehicleVo.setIsDeleted(0);
+		if(null != vehicleVo.getId()){
+			baseDao.hqlUpdate(vehicleVo);
+		}else{
+			vehicleVo.setAddTime(new Date());
+			baseDao.hqlSave(vehicleVo);
+		}
+	}
+	@Override
+	public ListResult<VehicleInfoEntity> findVehicleList(String licenseNumber, Integer limit, Integer page) throws Exception {
+		String hql = "from VehicleInfoEntity where isDeleted=0";
+		if(StringUtils.isNotBlank(licenseNumber)){
+			hql += " and licenseNumber like '%"+EscapeUtil.decodeSpecialChars(licenseNumber)+"%'";
+		}
+		@SuppressWarnings("unchecked")
+		List<VehicleInfoEntity> vehicleInfos = (List<VehicleInfoEntity>) baseDao.hqlPagedFind(hql, page, limit);
+		String sqlCount = "select count(*) from OA_VehicleInfo where isDeleted=0";
+		if(StringUtils.isNotBlank(licenseNumber)){
+			sqlCount += " and licenseNumber='"+EscapeUtil.decodeSpecialChars(licenseNumber)+"'";
+		}
+		int totalCount = Integer.parseInt(baseDao.getUniqueResult(sqlCount)+"");
+		return new ListResult<>(vehicleInfos, totalCount);
+	}
+	@Override
+	public VehicleInfoEntity getVehicleDetails(String id) throws Exception {
+		String hql = "from VehicleInfoEntity where id="+id;
+		VehicleInfoEntity  vehicleInfo = (VehicleInfoEntity) baseDao.hqlfindUniqueResult(hql);
+		if(null != vehicleInfo){
+			byte[] insuranceRecord = vehicleInfo.getInsuranceRecord();
+			if(null != insuranceRecord){
+				InsuranceRecord insuranceRecordVo = (InsuranceRecord) ObjectByteArrTransformer.toObject(insuranceRecord);
+				vehicleInfo.setInsuranceRecordVo(insuranceRecordVo);
+			}
+			byte[] yearlyInspection = vehicleInfo.getYearlyInspectionRecord();
+			if(null != yearlyInspection){
+				YearlyInspectionVo yearlyInspectionVo = (YearlyInspectionVo) ObjectByteArrTransformer.toObject(yearlyInspection);
+				vehicleInfo.setYearlyInspectionVo(yearlyInspectionVo);
+			}
+			byte[] maintainRecord = vehicleInfo.getMaintainRecord();
+			if(null != maintainRecord){
+				MaintainRecord maintainRecordVo = (MaintainRecord) ObjectByteArrTransformer.toObject(maintainRecord);
+				vehicleInfo.setMaintainRecordVo(maintainRecordVo);
+			}
+			byte[] repairRecord = vehicleInfo.getRepairRecord();
+			if(null != repairRecord){
+				RepairRecordVo repairRecordVo = (RepairRecordVo) ObjectByteArrTransformer.toObject(repairRecord);
+				vehicleInfo.setRepairRecordVo(repairRecordVo);
+			}
+			byte[] vehicleUseRecord = vehicleInfo.getVehicleUseRecord();
+			if(null != vehicleUseRecord){
+				VehicleUseRecord vehicleUseRecordVo = (VehicleUseRecord) ObjectByteArrTransformer.toObject(vehicleUseRecord);
+				vehicleInfo.setVehicleUseRecordVo(vehicleUseRecordVo);
+			}
+		}
+		return vehicleInfo;
+	}
+	@Override
+	public void deleteVehicle(String id) {
+		String sql = "update OA_VehicleInfo set isDeleted=1 where id="+id;
+		baseDao.excuteSql(sql);
+	}
+}

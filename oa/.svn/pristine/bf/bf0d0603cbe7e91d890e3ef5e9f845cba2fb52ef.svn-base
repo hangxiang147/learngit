@@ -1,0 +1,72 @@
+package com.zhizaolian.staff.service;
+
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+
+import com.zhizaolian.staff.entity.SalaryDetailEntity;
+import com.zhizaolian.staff.utils.ListResult;
+import com.zhizaolian.staff.vo.AttendanceVO;
+import com.zhizaolian.staff.vo.SigninVO;
+import com.zhizaolian.staff.vo.VacationVO;
+
+public interface AttendanceService {
+
+	/**
+	 * 解析员工考勤数据excel文件
+	 * @param fileName
+	 * @param companyID
+	 */
+	void parseExcel(String fileName, int companyID, StringBuffer index) throws Exception;
+	
+	
+	ListResult<SalaryDetailEntity> getSalarysListByKey(String name,String mobile,String email,int year,int month,String type,int pape,int limit);
+	
+	void parseSalary(String fileName,int year,int month) throws Exception;
+	/**
+	 * 分页查询满足给定查询条件的考勤信息
+	 * @param attendanceVO
+	 * @param page
+	 * @param limit
+	 * @return
+	 */
+	ListResult<AttendanceVO> findAttendancePageListByAttendanceVO(AttendanceVO attendanceVO, int page, int limit);
+	XSSFWorkbook exportAttendancePageListByAttendanceVO(AttendanceVO attendanceVO);
+
+	ListResult<VacationVO> findVacationPageListByVacationVO(VacationVO vacationVO,int page,int limit);
+	
+	/**
+	 * 检查指定用户指定日期的考勤统计，并修改
+	 * @param attendanceDate
+	 * @param userID
+	 */
+	void checkAttendanceDetail(Date attendanceDate, String userID);
+	
+	/**
+	 * 根据请假记录，检查相关的考勤统计数据
+	 * @param vacation
+	 */
+	void checkAttendanceDetailsByVacationVO(VacationVO vacation);
+	
+	//查询未签到的人
+	public List<SigninVO> findSigninsByDateAndCompanyID(Integer companyID,String date);
+	
+	//按月统计未签到的人
+	public List<SigninVO> findSignByMonthAndCompanyID(Integer companyID,Date date);
+	
+	//考勤统计
+	public ListResult<AttendanceVO> findAttendanceStatistics(AttendanceVO attendanceVO, int page, int limit);
+	
+	XSSFWorkbook exportAttendanceMsg(AttendanceVO attendanceVO);
+
+	Map<String, String> getWorkHour(String userId);
+
+
+	List<SalaryDetailEntity> getSalaryByCondition(String userId, String month, String year);
+
+
+	List<Object> getLateOrLeaveNumInfo(String companyId, String lateOrLeave);
+	
+}
